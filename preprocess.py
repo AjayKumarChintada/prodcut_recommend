@@ -11,9 +11,20 @@ def normalise_min_max(df):
     '''
     new_df = pd.DataFrame()
     for column in df.columns:
-        new_df[column+"_norm"] = (df[column] - df[column].min()) / \
-            (df[column].max() - df[column].min())+1
+        new_df[column+"_norm"] = ((df[column] - df[column].min()) / \
+            (df[column].max() - df[column].min())+1) 
     return new_df
+
+
+def get_null_count(filename):
+    df = pd.read_csv(filename)
+    return df.isnull().sum()
+
+
+
+# print(get_null_count('processed_product_data.csv'))
+
+
 
 
 # def preprocess(df):
@@ -35,7 +46,7 @@ new_df = normalise_min_max(df[['weight', 'ram', 'price', 'graphics',
                            'disk', 'battery', 'display', 'processor', 'max_memory']])
 
 df = result = pd.concat([df, new_df], axis=1, join='inner')
-print(df)
+print(df.head(10))
 
 
 def connect_elastic():
@@ -107,11 +118,20 @@ mappings = {
         }
     }
 }
+## get variances 
 
+print("-----Variances----")
+noramalisation_variance_vals = df[['weight_norm','ram_norm','price_norm','graphics_norm','disk_norm','battery_norm','display_norm','processor_norm','max_memory_norm']]
+print(noramalisation_variance_vals.var())
+noramalisation_variance_vals.boxplot()
 
 df['series'] = df['series'].fillna('laptop')
 
+
 df.to_csv('updated_dataset.csv', index=False)
+
+
+
 
 
 data = df.to_dict('records')
@@ -154,8 +174,8 @@ def update_user_vector(prev_vec, change_dict):
 
 
 #default user vector
-user_vec_ES = [new_df['weight_norm'].mean(), new_df['ram_norm'].mean(), new_df['price_norm'].mean(), new_df['graphics_norm'].mean(),
-               new_df['disk_norm'].mean(), new_df['battery_norm'].mean(), new_df['display_norm'].mean(), new_df['processor_norm'].mean(), new_df['max_memory_norm'].mean()]
+user_vec_ES = [new_df['weight_norm'].mean(), new_df['ram_norm'].median(), new_df['price_norm'].median(), new_df['graphics_norm'].median(),
+               new_df['disk_norm'].median(), new_df['battery_norm'].median(), new_df['display_norm'].median(), new_df['processor_norm'].median(), new_df['max_memory_norm'].median()]
 
 
 def cosine_in_elastic_search(es, index_name, query_vector):
@@ -170,7 +190,7 @@ def cosine_in_elastic_search(es, index_name, query_vector):
     '''
 
     search_query = {
-        "size": 20,
+        "size": 48,
         "query": {
             "script_score": {
                 "query": {
@@ -192,7 +212,7 @@ def cosine_in_elastic_search(es, index_name, query_vector):
             "Brand: {} - laptop series: {} - Score: {} ".format(resp['_source']['series'], resp['_source']['series'], resp['_score']))
 
         # print(resp)
-        print(json.dumps(resp, indent=4))
+        # print(json.dumps(resp, indent=4))
         print('\n\n')
 
 
