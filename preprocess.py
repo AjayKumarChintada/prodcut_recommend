@@ -12,7 +12,7 @@ def normalise_min_max(df):
     new_df = pd.DataFrame()
     for column in df.columns:
         new_df[column+"_norm"] = ((df[column] - df[column].min()) / \
-            (df[column].max() - df[column].min())+1) 
+            (df[column].max() - df[column].min())+1) *100
     return new_df
 
 
@@ -22,7 +22,7 @@ def get_null_count(filename):
 
 
 
-# print(get_null_count('processed_product_data.csv'))
+print(get_null_count('processed_product_data.csv'))
 
 
 
@@ -40,6 +40,8 @@ def get_null_count(filename):
 #         df['Max_Memory_Support'].median())
 #     df['Series'] = df['Series'].fillna('')
 #     return df
+
+
 df = pd.read_csv('full_processed.csv')
 # df = preprocess(df)
 new_df = normalise_min_max(df[['weight', 'ram', 'price', 'graphics',
@@ -123,7 +125,7 @@ mappings = {
 print("-----Variances----")
 noramalisation_variance_vals = df[['weight_norm','ram_norm','price_norm','graphics_norm','disk_norm','battery_norm','display_norm','processor_norm','max_memory_norm']]
 print(noramalisation_variance_vals.var())
-noramalisation_variance_vals.boxplot()
+# noramalisation_variance_vals.boxplot()
 
 df['series'] = df['series'].fillna('laptop')
 
@@ -150,13 +152,13 @@ def generator(data):
 
 # # ### creating index for the laptops with the defined mappings
 el = connect_elastic()
-# el= make_index(el,'laptop_recommendations',mappings=mappings)
-# print(el)
+# el= make_index('laptop_recommendations',mappings=mappings)
+# print(
 
 
 ### uploaded the data to elastic search
 
-# helpers.bulk(el, generator(data))
+# helpers.bulk( generator(data))
 
 
 def update_user_vector(prev_vec, change_dict):
@@ -178,7 +180,22 @@ user_vec_ES = [new_df['weight_norm'].mean(), new_df['ram_norm'].median(), new_df
                new_df['disk_norm'].median(), new_df['battery_norm'].median(), new_df['display_norm'].median(), new_df['processor_norm'].median(), new_df['max_memory_norm'].median()]
 
 
-def cosine_in_elastic_search(es, index_name, query_vector):
+
+#### for single instance of db connections through out whole program
+class es_instance:
+    __singleton_instance = None
+    # define the classmethod
+    @classmethod
+    def get_instance(cls):
+        # check for the singleton instance
+        if not cls.__singleton_instance:
+            cls.__singleton_instance = connect_elastic()
+            
+        # return the singleton instance
+        return cls.__singleton_instance
+
+
+def cosine_in_elastic_search(index_name:str, query_vector:list,no_of_values:int):
     '''
         args: 
             es: elastic search client
@@ -188,9 +205,9 @@ def cosine_in_elastic_search(es, index_name, query_vector):
         returns: 
             responses: es object with cosine similarity matches of 7
     '''
-
+    es = es_instance.get_instance()
     search_query = {
-        "size": 48,
+        "size": no_of_values,
         "query": {
             "script_score": {
                 "query": {
@@ -206,185 +223,189 @@ def cosine_in_elastic_search(es, index_name, query_vector):
         }
     }
     responses = es.search(index=index_name, body=search_query)
-
+    similarities = []
     for resp in responses['hits']['hits']:
-        print(
-            "Brand: {} - laptop series: {} - Score: {} ".format(resp['_source']['series'], resp['_source']['series'], resp['_score']))
-
+        # print("Brand: {} - laptop series: {} - Score: {} ".format(resp['_source']['series'], resp['_source']['series'], resp['_score']))
         # print(resp)
         # print(json.dumps(resp, indent=4))
-        print('\n\n')
+        similarities.append(resp)
+    return similarities
 
 
-###### imported code
-question1 = "How often you travell along with your laptop?"
-print(question1)
-# weight battery screensize
-
-q1_options = {
-    "0": {
-        "text": "yes, I travell a lot.",
-        "change":
-         {
-             "index": [0, 5, 6],
-                "value": [1, 1.75, 1.75]
-         }
-
-    },
-
-    "1": {
-        "text": "Not much, Usaully stay at my desk.",
-        "change":
-         {
-             "index": [0, 5, 6],
-             "value": [1.75, 1.2, 2]
-         }
-    },
-
-    "2":
-    {
-        "text": "Do not have any specification .",
-        "change":
-        {
-                "index": [0, 5, 6],
-                "value": [df['weight'].mean(), df['battery'].median(), df['display'].median()]
-        }
-    }
+        
 
 
+# ###### imported code
+# question1 = "How often you travell along with your laptop?"
+# print(question1)
+# # weight battery screensize
 
-}
+# q1_options = {
+#     "0": {
+#         "text": "yes, I travell a lot.",
+#         "change":
+#          {
+#              "index": [0, 5, 6],
+#                 "value": [1, 1.75, 1.75]
+#          }
 
-print("0 : yes, I travell a lot.")
-print("1 : Not much, Usaully stay at my desk.")
-print("2 : Do not have any specification.")
+#     },
 
-inp = input()
-user_vec = update_user_vector(user_vec_ES, q1_options[inp]["change"])
-print("user vec after q1", user_vec)
+#     "1": {
+#         "text": "Not much, Usaully stay at my desk.",
+#         "change":
+#          {
+#              "index": [0, 5, 6],
+#              "value": [1.75, 1.2, 2]
+#          }
+#     },
 
-#calling the cosine function
-cosine_in_elastic_search(el,'laptop_recommendations',user_vec_ES)
-
-question2 = "What is your laptop typically used for ?"
-print(question2)
-# RAM, Graphic ram, processor speed
-q2_options = {
-    "0": {
-        "text": "gaming and media development",
-        "change":
-         {
-             "index": [1, 3, -2],
-                "value": [2, 1.75, 2]
-         }
-    },
-    "1": {
-        "text": "office and general business purpose",
-        "change": {
-            "index": [1, 3, -2],
-            #if no graphis its 0
-            "value": [1, 1, 1]
-        }
-    },
-    "2": {
-        "text": "student usage/design and development",
-        "change": {
-            "index": [1, 3, -2],
-            "value": [1.5, 1.4, 1.5]
-        }
-    },
-
-}
-
-print("0 : gaming and media development")
-print("1 : office and general business purpose")
-print("2 : student usage/design and development")
-
-inp = input()
-user_vec = update_user_vector(user_vec_ES, q2_options[inp]["change"])
-
-print("user vec after q2", user_vec)
-cosine_in_elastic_search(el,'laptop_recommendations',user_vec_ES)
+#     "2":
+#     {
+#         "text": "Do not have any specification .",
+#         "change":
+#         {
+#                 "index": [0, 5, 6],
+#                 "value": [df['weight'].mean(), df['battery'].median(), df['display'].median()]
+#         }
+#     }
 
 
-question3 = "What is the price range you want for your laptop ?"
-print(question3)
-# price
 
-q3_options = {
-    "0": {
-        "text": "less than 30000 / low range",
-        "change":
-         {
-             "index": [2],
-                "value": [1]
-         }
-    },
-    "1": {
-        "text": "30000 to 50000 / mid range",
-        "change": {
-            "index": [2],
-            "value": [1.5]
-        }
-    },
-    "2": {
-        "text": "more than 50000 / high range",
-        "change": {
-            "index": [2],
-            "value": [2]
-        }
-    },
+# }
 
-}
+# print("0 : yes, I travell a lot.")
+# print("1 : Not much, Usaully stay at my desk.")
+# print("2 : Do not have any specification.")
 
-print("0 : less than 30000")
-print("1 : 30000 to 50000")
-print("2 : more than 50000")
+# inp = input()
+# user_vec = update_user_vector(user_vec_ES, q1_options[inp]["change"])
+# print("user vec after q1", user_vec)
 
-inp = input()
-user_vec = update_user_vector(user_vec_ES, q3_options[inp]["change"])
+# #calling the cosine function
+# cosine_in_elastic_search('laptop_recommendations',user_vec_ES)
 
-print("user vec after q3", user_vec)
+# question2 = "What is your laptop typically used for ?"
+# print(question2)
+# # RAM, Graphic ram, processor speed
+# q2_options = {
+#     "0": {
+#         "text": "gaming and media development",
+#         "change":
+#          {
+#              "index": [1, 3, -2],
+#                 "value": [2, 1.75, 2]
+#          }
+#     },
+#     "1": {
+#         "text": "office and general business purpose",
+#         "change": {
+#             "index": [1, 3, -2],
+#             #if no graphis its 0
+#             "value": [1, 1, 1]
+#         }
+#     },
+#     "2": {
+#         "text": "student usage/design and development",
+#         "change": {
+#             "index": [1, 3, -2],
+#             "value": [1.5, 1.4, 1.5]
+#         }
+#     },
 
-cosine_in_elastic_search(el,'laptop_recommendations',user_vec_ES)
+# }
+
+# print("0 : gaming and media development")
+# print("1 : office and general business purpose")
+# print("2 : student usage/design and development")
+
+# inp = input()
+# user_vec = update_user_vector(user_vec_ES, q2_options[inp]["change"])
+
+# print("user vec after q2", user_vec)
+# # cosine_in_elastic_search('laptop_recommendations',user_vec_ES)
 
 
-question4 = "Do you store a lot of content in your device?"
-print(question4)
-# disk size, max memory support
 
-q4_options = {
-    "0": {
-        "text": "Yes, a lot. Need large storages",
-        "change":
-         {
-             "index": [4, 8],
-             "value": [2, 2]
-         }
-    },
-    "1": {
-        "text": "No I dont. Use it only for official purposes",
-        "change": {
-            "index": [4, 8],
-            "value": [1, 1]
-        }
-    },
-    "2": {
-        "text": "Moderate usage, nothing specific. Anything works",
-        "change": {
-            "index": [4, 8],
-            "value": [1.5, 1.5]
-        }
-    },
 
-}
+# question3 = "What is the price range you want for your laptop ?"
+# print(question3)
+# # price
 
-print("0 : Yes, a lot. Need large storages")
-print("1 : No I dont. Use it only for official purposes")
-print("2 : Moderate usage, nothing specific. Anything works")
+# q3_options = {
+#     "0": {
+#         "text": "less than 30000 / low range",
+#         "change":
+#          {
+#              "index": [2],
+#                 "value": [1]
+#          }
+#     },
+#     "1": {
+#         "text": "30000 to 50000 / mid range",
+#         "change": {
+#             "index": [2],
+#             "value": [1.5]
+#         }
+#     },
+#     "2": {
+#         "text": "more than 50000 / high range",
+#         "change": {
+#             "index": [2],
+#             "value": [2]
+#         }
+#     },
 
-inp = input()
-user_vec = update_user_vector(user_vec_ES, q4_options[inp]["change"])
-print("user vec after q4", user_vec)
+# }
 
-cosine_in_elastic_search(el,'laptop_recommendations',user_vec_ES)
+# print("0 : less than 30000")
+# print("1 : 30000 to 50000")
+# print("2 : more than 50000")
+
+# inp = input()
+# user_vec = update_user_vector(user_vec_ES, q3_options[inp]["change"])
+
+# print("user vec after q3", user_vec)
+
+# cosine_in_elastic_search('laptop_recommendations',user_vec_ES)
+
+
+# question4 = "Do you store a lot of content in your device?"
+# print(question4)
+# # disk size, max memory support
+
+# q4_options = {
+#     "0": {
+#         "text": "Yes, a lot. Need large storages",
+#         "change":
+#          {
+#              "index": [4, 8],
+#              "value": [2, 2]
+#          }
+#     },
+#     "1": {
+#         "text": "No I dont. Use it only for official purposes",
+#         "change": {
+#             "index": [4, 8],
+#             "value": [1, 1]
+#         }
+#     },
+#     "2": {
+#         "text": "Moderate usage, nothing specific. Anything works",
+#         "change": {
+#             "index": [4, 8],
+#             "value": [1.5, 1.5]
+#         }
+#     },
+
+# }
+
+# print("0 : Yes, a lot. Need large storages")
+# print("1 : No I dont. Use it only for official purposes")
+# print("2 : Moderate usage, nothing specific. Anything works")
+
+# inp = input()
+# user_vec = update_user_vector(user_vec_ES, q4_options[inp]["change"])
+# print("user vec after q4", user_vec)
+
+# cosine_in_elastic_search('laptop_recommendations',user_vec_ES)
