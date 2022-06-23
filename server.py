@@ -1,6 +1,6 @@
 from crypt import methods
 from flask import Flask, request
-from preprocess import cosine_in_elastic_search
+from product_recommendation import cosine_in_elastic_search
 
 
 
