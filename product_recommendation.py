@@ -149,7 +149,9 @@ def update_vector_with_choices(question_num, choice_num):
         }
     }
 
-    return question_filters[question_num][choice_num]
+    # return question_filters[question_num][choice_num]
+    indexes , values = question_filters[question_num,choice_num]
+    
 
 
 def update_vector(arr, indexes, values):
@@ -173,7 +175,16 @@ def main():
 
 
 
-main()
+# main()
+
+
+
+
+
+
+
+
+
 
 
 
