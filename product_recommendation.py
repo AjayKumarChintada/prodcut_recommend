@@ -21,9 +21,6 @@ def get_null_count(filename):
     return df.isnull().sum()
 
 
-
-
-
 def connect_elastic():
     client = Elasticsearch("http://localhost:9200")
     if client.ping():
@@ -32,9 +29,6 @@ def connect_elastic():
     else:
         print("Cannot connect.")
     return client
-
-
-
 
 
 def get_default_vector():
@@ -109,49 +103,18 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
     }
     responses = es.search(index=index_name, body=search_query)
     similarities = []
-    for resp in responses['hits']['hits']:
-        similarities.append(resp)
-    return similarities
-
-
-def update_vector_with_choices(question_num, choice_num):
-
-    question_filters = {
-        0: {
-            # indexes:  weight battery screensize
-            #option number: [[index,replacements]
-
-            0: [[0, 5, 6], [1, 1.75, 1.75]],
-            1: [[0, 5, 6], [1.75, 1.2, 2]],
-            2: [[0, 5, 6], []]
-        },
-        ## RAM, Graphic ram, processor speed
-        1: {
-
-            0: [[1, 3, -2], [2, 1.75, 2]],
-            1: [[1, 3, -2], [1, 1, 1]],
-            2: [[1, 3, -2], [1.5, 1.4, 1.5]]
-
-
-        },
-        ## price
-        2: {
-            0: [[2], [1]],
-            1: [[2], [1.5]],
-            2: [[2], [2]]
-
-        },
-        ## disk size, max memory support
-        3: {
-            0: [[4, 8], [2, 2]],
-            1: [[4, 8], [1, 1]],
-            2: [[4, 8], [1.5, 1.5]]
+    for data in responses['hits']['hits']:
+        response_to_be_shown = {
+            "brand": data['_source']['brand'],
+            "series": data['_source']['series'],
+            "price": data['_source']['price'],
+            "url": data['_source']['url'],
+            'rating': data['_source']['rating'],
+            "image_url": data['_source']['image_url'],
+            "display": data['_source']["display"]
         }
-    }
-
-    # return question_filters[question_num][choice_num]
-    indexes , values = question_filters[question_num,choice_num]
-    
+        similarities.append(response_to_be_shown)
+    return similarities
 
 
 def update_vector(arr, indexes, values):
@@ -159,55 +122,8 @@ def update_vector(arr, indexes, values):
     if not values:
         return arr
     for i in range(len(indexes)):
-        arr[indexes[i]]= values[i]
+        arr[indexes[i]] = values[i]
     return arr
-
-
-def main():
-    user_vec_ES = get_default_vector()
-    print("Default Vector: ", user_vec_ES)
-    question_num = int(input("Enter Qestion number: "))
-    choice_num = int(input('Enter Choice number: '))
-    indexes, filters = update_vector_with_choices(
-        question_num=question_num, choice_num=choice_num)
-    user_vec_ES = update_vector(user_vec_ES, indexes=indexes, values=filters)
-    print(user_vec_ES)
-
-
-
-# main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ## get variances

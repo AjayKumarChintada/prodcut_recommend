@@ -1,11 +1,11 @@
-from crypt import methods
+
 from flask import Flask, request, session
 from product_recommendation import cosine_in_elastic_search, update_vector, get_default_vector
 
 
 app = Flask(__name__)
 
-app.secret_key = 'heythre'
+app.secret_key = 'LetsDoIt'
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -97,7 +97,6 @@ def get_questions():
             "question": "Do you store a lot of content in your device?",
             'options': ['Yes, a lot. Need large storages', 'No I dont. Use it only for official purposes', ' Moderate usage, nothing specific. Anything works']
 
-
         }
 
     }
@@ -157,14 +156,19 @@ def user_choices():
 
     indexes, values = question_filters[question_number][choice_number]
 
+    #for first time user initializing default vector first
     if 'default' not in session:
         vector = get_default_vector()
         session['default'] = vector
 
+    # updating that default vector using payload
     session['default'] = update_vector(session['default'], indexes, values)
     return {'user_vector': session['default']}, 200
 
 
 if __name__ == '__main__':
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)
+
+
+
