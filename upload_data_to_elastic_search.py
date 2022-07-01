@@ -103,7 +103,8 @@ def main():
         }
     }
     ## index name
-    index_name = input("Enter index_name: ")
+    # index_name = input("Enter index_name: ")
+    index_name = 'laptop_recommendations'
     el = connect_elastic()
 
     print("Creating index with defined mappings for the dataset..")
