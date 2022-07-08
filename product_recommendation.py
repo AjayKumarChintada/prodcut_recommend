@@ -109,7 +109,7 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
             "series": data['_source']['series'],
             "price": data['_source']['price'],
             "url": data['_source']['url'],
-            'rating': data['_source']['rating'],
+            'rating': float(data['_source']['rating'][:3]),
             "image_url": data['_source']['image_url'],
             "display": data['_source']["display"]
         }
