@@ -11,8 +11,7 @@ def normalise_min_max(df):
     '''
     df = pd.DataFrame()
     for column in df.columns:
-        df[column+"_norm"] = ((df[column] - df[column].min()) /
-                              (df[column].max() - df[column].min())+1)
+        df[column+"_norm"] = ((df[column] - df[column].min()) /(df[column].max() - df[column].min())+1)
     return df
 
 

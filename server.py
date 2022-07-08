@@ -1,9 +1,9 @@
 from crypt import methods
 import json
 import flask
-from flask import Flask, request, session,jsonify
+from flask import Flask, request, session, jsonify
 from product_recommendation import cosine_in_elastic_search, update_vector, get_default_vector
-from flask_cors import CORS,cross_origin
+from flask_cors import CORS, cross_origin
 
 
 app = Flask(__name__)
@@ -31,11 +31,8 @@ def get_recommendations():
     return {'data': resp}
 
 
-
-
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
 @cross_origin()
-
 def user_choices():
     """takes question number and choice number 
 
@@ -70,7 +67,7 @@ def user_choices():
     }
 
     if flask.request.method == 'GET':
-        return jsonify({"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options']})
+        return jsonify({'question_data':{"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options']}})
 
     else:
         data = request.get_json(force=True)
@@ -82,9 +79,14 @@ def user_choices():
                 # indexes:  weight battery screensize
                 #option number: [[index,replacements]
 
+                # every col min, max req
+                # x = 1.75 : x_ORg = (1,min)(2,max)   (x, x_org) (y=mx+c)
+                # m = max-min/2 - slope
+                # x_org - min = slope x (x-1)
+
                 0: [[0, 5, 6], [1, 1.75, 1.75]],
                 1: [[0, 5, 6], [1.75, 1.2, 2]],
-                2: [[0, 5, 6], []]
+                2: [[0, 5, 6], [1.5,1.5,1.5]]
             },
             ## RAM, Graphic ram, processor speed
             1: {
@@ -135,7 +137,7 @@ def user_choices():
 
             #index name defined
 
-            return jsonify({'laptop_data': resp, "question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']}), 200
+            return jsonify({'laptop_data': resp, "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']}}), 200
 
 
 @app.route('/laptop_recommendations/get_labels', methods=['POST'])
@@ -154,9 +156,6 @@ def get_labels():
     return jsonify({"error": "Question number not found.."}), 404
 
 
-
-
-
 if __name__ == '__main__':
 
-    app.run(debug=True, port=5001,host='0.0.0.0')
+    app.run(debug=True, port=5001, host='0.0.0.0')
