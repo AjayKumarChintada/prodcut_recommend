@@ -1,3 +1,4 @@
+from crypt import methods
 import json
 import flask
 from flask import Flask, request, session,jsonify
@@ -63,7 +64,6 @@ def user_choices():
         3: {
             "question": "Do you store a lot of content in your device?",
             'options': ['Yes, a lot. Need large storages', 'No I dont. Use it only for official purposes', ' Moderate usage, nothing specific. Anything works']
-
 
         }
 
@@ -138,6 +138,25 @@ def user_choices():
             return jsonify({'laptop_data': resp, "question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']}), 200
 
 
+@app.route('/laptop_recommendations/get_labels', methods=['POST'])
+@cross_origin()
+def get_labels():
+    data = request.get_json(force=True)
+    num = data['question_number']
+    questions_tags = {
+        0: ["weight", 'battery', 'screen_size'],
+        1: ['ram', 'graphics', 'processor'],
+        2: ['price'],
+        3: ['storage', 'max_memory']}
+
+    if num in questions_tags:
+        return jsonify({"labels":  questions_tags[num]}), 200
+    return jsonify({"error": "Question number not found.."}), 404
+
+
+
+
+
 if __name__ == '__main__':
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001,host='0.0.0.0')
