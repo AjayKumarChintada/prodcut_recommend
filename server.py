@@ -67,7 +67,7 @@ def user_choices():
     }
 
     if flask.request.method == 'GET':
-        return jsonify({'question_data':{"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options']}})
+        return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options']}})
 
     else:
         data = request.get_json(force=True)
@@ -76,39 +76,95 @@ def user_choices():
 
         question_filters = {
             0: {
-                # indexes:  weight battery screensize
+                # indexes:  weight battery display
                 #option number: [[index,replacements]
 
-                # every col min, max req
-                # x = 1.75 : x_ORg = (1,min)(2,max)   (x, x_org) (y=mx+c)
-                # m = max-min/2 - slope
-                # x_org - min = slope x (x-1)
 
                 0: [[0, 5, 6], [1, 1.75, 1.75]],
                 1: [[0, 5, 6], [1.75, 1.2, 2]],
-                2: [[0, 5, 6], [1.5,1.5,1.5]]
+                2: [[0, 5, 6], [1.5, 1.5, 1.5]],
+                'original_vals': {
+                    0: {
+                        'weight': 1.07,
+                        'battery': 11.5,
+                        'screen_size': 16.24
+                    },
+                    1: {
+                        'weight': 2.51,
+                        'battery': 6.0,
+                        'screen_size': 17.8
+                    },
+                    2: {
+                        'weight': 2.05,
+                        'battery': 10,
+                        'screen_size': 14.5
+                    }
+                }
             },
             ## RAM, Graphic ram, processor speed
             1: {
 
                 0: [[1, 3, -2], [2, 1.75, 2]],
                 1: [[1, 3, -2], [1, 1, 1]],
-                2: [[1, 3, -2], [1.5, 1.4, 1.5]]
-
+                2: [[1, 3, -2], [1.5, 1.4, 1.5]],
+                'original_vals': {
+                    0: {
+                        'ram': 16,
+                        'graphics': 12,
+                        'processor': 4.7
+                    },
+                    1: {
+                        'ram': 4.0,
+                        'graphics': 0,
+                        'processor': 1.1
+                    },
+                    2: {
+                        'ram': 10,
+                        'graphics': 8,
+                        'processor': 2.90
+                    }
+                }
 
             },
             ## price
             2: {
                 0: [[2], [1]],
                 1: [[2], [1.5]],
-                2: [[2], [2]]
+                2: [[2], [2]],
+                'original_vals': {
+                    0: {
+                        'price': 19990
+
+                    },
+                    1: {
+                        'price': 68490
+                    },
+                    2: {
+                        'price': 116990
+                    }
+                }
 
             },
             ## disk size, max memory support
             3: {
                 0: [[4, 8], [2, 2]],
                 1: [[4, 8], [1, 1]],
-                2: [[4, 8], [1.5, 1.5]]
+                2: [[4, 8], [1.5, 1.5]],
+
+                'original_vals': {
+                    0: {
+                        'disk': 1024,
+                        'memory': 32
+                    },
+                    1: {
+                        'disk': 64,
+                        'memory': 4
+                    },
+                    2: {
+                        'disk': 512,
+                        'memory': 18
+                    }
+                }
             }
         }
 
@@ -131,13 +187,19 @@ def user_choices():
         resp = cosine_in_elastic_search(
             'laptop_recommendations', session['default'], 10)
         if question_number == len(question_dictionary)-1:
-            return jsonify({'laptop_data': resp, "question": "All questions done", "options": []}), 200
+            return jsonify({
+            'laptop_data': resp, 
+            "question": "All questions done", "options": [],
+            'filters': question_filters[question_number]['original_vals'][choice_number]}), 200
 
         if question_number in question_dictionary:
 
             #index name defined
 
-            return jsonify({'laptop_data': resp, "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']}}), 200
+            return jsonify({'laptop_data': resp,
+                            "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']},
+                            'filters': question_filters[question_number]['original_vals'][choice_number]
+                            }), 200
 
 
 @app.route('/laptop_recommendations/get_labels', methods=['POST'])
@@ -146,7 +208,9 @@ def get_labels():
     data = request.get_json(force=True)
     num = data['question_number']
     questions_tags = {
-        0: ["weight", 'battery', 'screen_size'],
+        0: {
+
+        }["weight", 'battery', 'screen_size'],
         1: ['ram', 'graphics', 'processor'],
         2: ['price'],
         3: ['storage', 'max_memory']}
