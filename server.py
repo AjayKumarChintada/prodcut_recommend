@@ -9,7 +9,7 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 
 
-app.secret_key = 'LetsDoIt'
+app.secret_key = 'ig'
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -176,29 +176,38 @@ def user_choices():
                 return jsonify("Invalid Choice chosen..."), 404
 
         indexes, values = question_filters[question_number][choice_number]
+        filters = question_filters[question_number]['original_vals'][choice_number]
 
         #for first time user initializing default vector first
         if 'default' not in session:
             vector = get_default_vector()
             session['default'] = vector
 
+        if 'filters' not in session:
+            session['filters'] = {}
+
+
+        session['filters'].update(filters)
+
         # updating that default vector using payload
         session['default'] = update_vector(session['default'], indexes, values)
-        resp = cosine_in_elastic_search(
-            'laptop_recommendations', session['default'], 10)
+
+        #updating filters
+        resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+
+
+        #condition to handle last question
         if question_number == len(question_dictionary)-1:
             return jsonify({
-            'laptop_data': resp, 
-            "question": "All questions done", "options": [],
-            'filters': question_filters[question_number]['original_vals'][choice_number]}), 200
+                'laptop_data': resp,
+                "question": "All questions done", "options": [],
+                'filters': session['filters']}), 200
 
+        #questions
         if question_number in question_dictionary:
-
-            #index name defined
-
             return jsonify({'laptop_data': resp,
                             "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']},
-                            'filters': question_filters[question_number]['original_vals'][choice_number]
+                            'filters': session['filters']
                             }), 200
 
 
