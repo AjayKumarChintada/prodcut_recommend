@@ -9,7 +9,7 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 
 
-app.secret_key = 'it'
+app.secret_key = 'aafdj'
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -30,6 +30,39 @@ def get_recommendations():
 
     return {'data': resp}
 
+
+def make_filter_object(array:list):
+    """ returns list of dictionaries or filter objects
+    Args:
+        array (list): list of list
+    """
+    data = []
+    for resp in array: 
+        metrics = {
+            'filter': resp[0],
+            'value': resp[1],
+            "operator":resp[3],
+            "metric": resp[2]
+            
+        }
+
+        data.append(metrics)
+    return data
+
+def search_and_get_index(obj,b):
+    """search for same filter and returns 1 and its index value if found else 0
+
+    Args:
+        obj (filters oject list): list of filter objects
+        b (single object): a single filter object to search
+
+    Returns:
+        (1,index_val)/ 0: tuple of index value and flag or 0
+    """
+    for indexval in range(len(obj)):
+        if b['filter'] == obj[indexval]['filter']:
+            return 1,indexval
+    return 0
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
 @cross_origin()
@@ -84,21 +117,21 @@ def user_choices():
                 1: [[0, 5, 6], [1.75, 1.2, 2]],
                 2: [[0, 5, 6], [1.5, 1.5, 1.5]],
                 'original_vals': {
-                    0: {
-                        'weight': 1.07,
-                        'battery': 11.5,
-                        'screen_size': 16.24
-                    },
-                    1: {
-                        'weight': 2.51,
-                        'battery': 6.0,
-                        'screen_size': 17.8
-                    },
-                    2: {
-                        'weight': 2.05,
-                        'battery': 10,
-                        'screen_size': 14.5
-                    }
+                    0: [
+                        ['weight', 1.07,'Kg','~'],
+                        ['battery', 11.5,'Hours','~'],
+                        ['screen_size', 16.24,'Inches','~']
+                    ],
+                    1: [
+                        ['weight', 2.51,'Kg','~'],
+                        ['battery', 6.0,'Hours','~'],
+                        ['screen_size', 17.8,'Inches','~']
+                    ],
+                    2: [
+                        ['weight', 2.05,'Kg','~'],
+                        ['battery', 10,'Hours','~'],
+                        ['screen_size', 14.5,'Inches','~']
+                    ]
                 }
             },
             # RAM, Graphic ram, processor speed
@@ -108,21 +141,21 @@ def user_choices():
                 1: [[1, 3, -2], [1, 1, 1]],
                 2: [[1, 3, -2], [1.5, 1.4, 1.5]],
                 'original_vals': {
-                    0: {
-                        'ram': 16,
-                        'graphics': 12,
-                        'processor': 4.7
-                    },
-                    1: {
-                        'ram': 4.0,
-                        'graphics': 0,
-                        'processor': 1.1
-                    },
-                    2: {
-                        'ram': 10,
-                        'graphics': 8,
-                        'processor': 2.90
-                    }
+                    0: [
+                        ['ram', 16,'GB','~'],
+                        ['graphics', True,'GPU','='],
+                        ['processor', 4.7,'GHz','~']
+                    ],
+                    1: [
+                        ['ram', 4.0,'GB','~'],
+                        ['graphics',  False,'GPU','='],
+                        ['processor', 1.1,'GHz','~']
+                    ],
+                    2: [
+                        ['ram', 10,'GB','~'],
+                        ['graphics',  True,'GPU','='],
+                        ['processor', 2.90,'GHz','~']
+                    ]
                 }
 
             },
@@ -132,16 +165,15 @@ def user_choices():
                 1: [[2], [1.5]],
                 2: [[2], [2]],
                 'original_vals': {
-                    0: {
-                        'price': 19990
-
-                    },
-                    1: {
-                        'price': 68490
-                    },
-                    2: {
-                        'price': 116990
-                    }
+                    0: [
+                        ['price', 19990,'INR','~']
+                    ],
+                    1: [
+                        ['price', 68490,'INR','~']
+                    ],
+                    2: [
+                        ['price', 116990,'INR','~']
+                    ]
                 }
 
             },
@@ -152,18 +184,19 @@ def user_choices():
                 2: [[4, 8], [1.5, 1.5]],
 
                 'original_vals': {
-                    0: {
-                        'disk': 1024,
-                        'memory': 32
-                    },
-                    1: {
-                        'disk': 64,
-                        'memory': 4
-                    },
-                    2: {
-                        'disk': 512,
-                        'memory': 18
-                    }
+                    0: [
+                        ['disk', 1024,'GB','~'],
+                        ['memory',  32,'GB','~']
+
+                    ],
+                    1: [
+                        ['disk', 64,'GB','~'],
+                        ['memory',  4,'GB','~']
+                    ],
+                    2: [
+                        ['disk', 512,'GB','~'],
+                        ['memory',  18,'GB','~']
+                    ]
                 }
             }
         }
@@ -184,11 +217,19 @@ def user_choices():
             vector = get_default_vector()
             session['default'] = vector
 
-        if 'filters' not in session:
-            session['filters'] = []
 
-        if filters not in session['filters']:
-            session['filters'].append(filters)
+        ## logic to append filters to backend 
+        filter_objects = make_filter_object(filters)
+        if 'filters' not in session:
+            session['filters'] = filter_objects
+
+        else:
+            for filter_object in filter_objects:
+                if not search_and_get_index(session['filters'],filter_object):
+                    session['filters'].append(filter_object)
+
+            
+
 
         # updating that default vector using payload
         session['default'] = update_vector(session['default'], indexes, values)
@@ -213,6 +254,16 @@ def user_choices():
                             'filters': session['filters']
                             }), 200
 
+
+@app.route('/laptop_recommendations/remove_filter',methods=['POST'])
+@cross_origin()
+def remove_filter():
+    payload = request.get_json(force=True)
+    filter_to_be_removed = {'filter': payload['filter']}
+    _, indexval = search_and_get_index(session['filters'],filter_to_be_removed)
+    del session['filters'][indexval]
+    
+    return jsonify( session['filters']),200
 
 
 
