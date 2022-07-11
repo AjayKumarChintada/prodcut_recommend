@@ -107,16 +107,20 @@ def main():
     index_name = 'laptop_recommendations'
     el = connect_elastic()
 
-    print("Creating index with defined mappings for the dataset..")
-    el = make_index(el, index_name, mappings=mappings)
-    records = make_records('updated_dataset.csv')
-    generator_data = generator(records, index_name)
-    print(' uploading the data to elastic search....')
-    ## uploading the data to elastic search....
-    helpers.bulk(el, generator_data)
+    #check if the same index name exists or not
+    if not el.indices.exists(index=index_name):
+        print("Creating index with defined mappings for the dataset..")
+        el = make_index(el, index_name, mappings=mappings)
+        records = make_records('updated_dataset.csv')
+        generator_data = generator(records, index_name)
+        print(' uploading the data to elastic search....')
+        ## uploading the data to elastic search....
+        helpers.bulk(el, generator_data)
 
-    print("Finished uploading ....")
-    print()
+        print("Finished uploading ....")
+        print()
+    else:
+        print("Index name already present ..")
 
 
 main()

@@ -9,7 +9,7 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 
 
-app.secret_key = 'ig'
+app.secret_key = 'it'
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -67,7 +67,7 @@ def user_choices():
     }
 
     if flask.request.method == 'GET':
-        return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options']}})
+        return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 1}})
 
     else:
         data = request.get_json(force=True)
@@ -77,7 +77,7 @@ def user_choices():
         question_filters = {
             0: {
                 # indexes:  weight battery display
-                #option number: [[index,replacements]
+                # option number: [[index,replacements]
 
 
                 0: [[0, 5, 6], [1, 1.75, 1.75]],
@@ -101,7 +101,7 @@ def user_choices():
                     }
                 }
             },
-            ## RAM, Graphic ram, processor speed
+            # RAM, Graphic ram, processor speed
             1: {
 
                 0: [[1, 3, -2], [2, 1.75, 2]],
@@ -126,7 +126,7 @@ def user_choices():
                 }
 
             },
-            ## price
+            # price
             2: {
                 0: [[2], [1]],
                 1: [[2], [1.5]],
@@ -145,7 +145,7 @@ def user_choices():
                 }
 
             },
-            ## disk size, max memory support
+            # disk size, max memory support
             3: {
                 0: [[4, 8], [2, 2]],
                 1: [[4, 8], [1, 1]],
@@ -177,56 +177,44 @@ def user_choices():
 
         indexes, values = question_filters[question_number][choice_number]
         filters = question_filters[question_number]['original_vals'][choice_number]
+        
 
-        #for first time user initializing default vector first
+        # for first time user initializing default vector first
         if 'default' not in session:
             vector = get_default_vector()
             session['default'] = vector
 
         if 'filters' not in session:
-            session['filters'] = {}
+            session['filters'] = []
 
-
-        session['filters'].update(filters)
+        if filters not in session['filters']:
+            session['filters'].append(filters)
 
         # updating that default vector using payload
         session['default'] = update_vector(session['default'], indexes, values)
 
-        #updating filters
-        resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+        # updating filters
+        resp = cosine_in_elastic_search(
+            'laptop_recommendations', session['default'], 10)
 
-
-        #condition to handle last question
+        # condition to handle last question
         if question_number == len(question_dictionary)-1:
             return jsonify({
                 'laptop_data': resp,
-                "question": "All questions done", "options": [],
-                'filters': session['filters']}), 200
+                'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
+                'filters': session['filters'],
 
-        #questions
+            }), 200
+
+        # questions
         if question_number in question_dictionary:
             return jsonify({'laptop_data': resp,
-                            "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options']},
+                            "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options'], 'next_question_number': question_number+1},
                             'filters': session['filters']
                             }), 200
 
 
-@app.route('/laptop_recommendations/get_labels', methods=['POST'])
-@cross_origin()
-def get_labels():
-    data = request.get_json(force=True)
-    num = data['question_number']
-    questions_tags = {
-        0: {
 
-        }["weight", 'battery', 'screen_size'],
-        1: ['ram', 'graphics', 'processor'],
-        2: ['price'],
-        3: ['storage', 'max_memory']}
-
-    if num in questions_tags:
-        return jsonify({"labels":  questions_tags[num]}), 200
-    return jsonify({"error": "Question number not found.."}), 404
 
 
 if __name__ == '__main__':
