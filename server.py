@@ -9,7 +9,13 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 
 
-app.secret_key = 'aafdj'
+app.secret_key = 'alpha'
+
+@app.route('/laptop_recommendations/del')
+@cross_origin()
+def clear_session():
+    session.clear()
+    return jsonify({'msg': 'session cleared..'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -62,7 +68,7 @@ def search_and_get_index(obj,b):
     for indexval in range(len(obj)):
         if b['filter'] == obj[indexval]['filter']:
             return 1,indexval
-    return 0
+    return 0,None
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
 @cross_origin()
@@ -260,10 +266,22 @@ def user_choices():
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
-    _, indexval = search_and_get_index(session['filters'],filter_to_be_removed)
-    del session['filters'][indexval]
-    
-    return jsonify( session['filters']),200
+    flag,indexval = search_and_get_index(session['filters'],filter_to_be_removed)
+    if flag :
+
+        # val = session['list']
+        # val.remove(str(id))
+        # session['list'] = val
+
+        # val = session['filters']
+        # val.pop(indexval)
+        # session['filters'] = val
+        session['filters'].pop(indexval)
+        session.modified = True
+        return jsonify( session['filters']),200
+        
+    else:
+        return jsonify({'msg':'filter not applied yet..'}), 404
 
 
 
@@ -271,3 +289,4 @@ def remove_filter():
 if __name__ == '__main__':
 
     app.run(debug=True, port=5001, host='0.0.0.0')
+
