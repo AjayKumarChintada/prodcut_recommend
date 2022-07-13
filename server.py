@@ -3,7 +3,7 @@ import json
 import flask
 from flask import Flask, request, session, jsonify
 from chec import get_index_and_value
-from product_recommendation import cosine_in_elastic_search, update_vector, get_default_vector,read_default_values
+from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values
 from flask_cors import CORS, cross_origin
 
 
@@ -48,9 +48,7 @@ def make_filter_object(array: list):
             'value': resp[1],
             "operator": resp[3],
             "metric": resp[2]
-
         }
-
         data.append(metrics)
     return data
 
@@ -118,8 +116,6 @@ def user_choices():
             0: {
                 # indexes:  weight battery display
                 # option number: [[index,replacements]
-
-
                 0: [[0, 5, 6], [1, 1.75, 1.75]],
                 1: [[0, 5, 6], [1.75, 1.2, 2]],
                 2: [[0, 5, 6], [1.5, 1.5, 1.5]],
@@ -143,7 +139,6 @@ def user_choices():
             },
             # RAM, Graphic ram, processor speed
             1: {
-
                 0: [[1, 3, -2], [2, 1.75, 2]],
                 1: [[1, 3, -2], [1, 1, 1]],
                 2: [[1, 3, -2], [1.5, 1.4, 1.5]],
@@ -164,7 +159,6 @@ def user_choices():
                         ['processor', 2.90, 'GHz', '~']
                     ]
                 }
-
             },
             # price
             2: {
@@ -182,14 +176,12 @@ def user_choices():
                         ['price', 116990, 'INR', '~']
                     ]
                 }
-
             },
             # disk size, max memory support
             3: {
                 0: [[4, 8], [2, 2]],
                 1: [[4, 8], [1, 1]],
                 2: [[4, 8], [1.5, 1.5]],
-
                 'original_vals': {
                     0: [
                         ['disk', 1024, 'GB', '~'],
@@ -207,7 +199,6 @@ def user_choices():
                 }
             }
         }
-
         if question_number not in question_filters:
             return jsonify({"Error": "invalid question number..."}), 404
 
@@ -218,8 +209,7 @@ def user_choices():
         indexes, values = question_filters[question_number][choice_number]
         filters = question_filters[question_number]['original_vals'][choice_number]
 
-        # for first time user initializing default vector first
-
+        ## for first time user initializing default vector first
         default_median_dictionary = read_default_values()
         if 'default' not in session:
             vector = list(default_median_dictionary.values())
@@ -229,15 +219,13 @@ def user_choices():
         filter_objects = make_filter_object(filters)
         if 'filters' not in session:
             session['filters'] = filter_objects
-
         else:
             for filter_object in filter_objects:
                 flag, _ = search_and_get_index(
                     session['filters'], filter_object)
                 if not flag:
                     session['filters'].append(filter_object)
-
-              
+      
         # updating that default vector using payload
         session['default'] = update_vector(session['default'], indexes, values)
         # updating filters
@@ -250,7 +238,6 @@ def user_choices():
                 'laptop_data': resp,
                 'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
                 'filters': session['filters'],
-
             }), 200
 
         # questions
@@ -259,7 +246,6 @@ def user_choices():
                             "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options'], 'next_question_number': question_number+1},
                             'filters': session['filters']
                             }), 200
-
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
 @cross_origin()
@@ -275,12 +261,10 @@ def remove_filter():
         index_val, median_value = get_index_and_value(median_dictionary,filter_key)
         session['default'][index_val] = median_value
         session.modified = True
-
         resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
         return jsonify({'laptop_data:': resp,'msg':'{} removed'.format(filter_key)}), 200
     else:
         return jsonify({'msg': 'filter not applied yet..'}), 404
-
 
 @app.route('/laptop_recommendations/current_vector')
 @cross_origin()
@@ -289,5 +273,4 @@ def get_current_vector():
 
 
 if __name__ == '__main__':
-
     app.run(debug=True, port=5001, host='0.0.0.0')
