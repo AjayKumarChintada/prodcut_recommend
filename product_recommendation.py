@@ -124,3 +124,36 @@ def update_vector(arr, indexes, values):
         arr[indexes[i]] = values[i]
     return arr
 
+
+def read_default_values(filename = 'default_vector_values.json'):
+    """get the default median values dicitionary with key names as columns
+
+    Args:
+        filename (str, optional): give the default values initialization name. Defaults to 'default_vector_values.json'.
+
+    Returns:
+        dictionary: returns dictionary with keys and values as medians
+    """
+    try:
+        with open(filename,'r') as file:
+            data = json.load(file)
+            return data
+    except:
+        return 'file error '
+
+
+def get_index_and_value(dicitionary,key):
+    """used to get the index value and updated value of array
+
+    Args:
+        dicitionary (dict): dictionary of column keys median values
+        key (str): keyname we wanted to check for filter
+
+    Returns:
+        tuple: returns index value and the value to update in array
+    """
+    keys = list(dicitionary.keys())
+    index_val,value = keys.index(key),dicitionary[key]
+    return index_val,value
+
+

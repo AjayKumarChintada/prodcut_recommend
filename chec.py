@@ -118,8 +118,39 @@ def search_and_get_index(obj,b):
             return 1,indexval
     return 0
 
-# print(search_and_get_index(obj,b))
-for indexval in range(len(obj)):
-    if b['filter'] == obj[indexval]['filter']:
-        del(obj[indexval])
-print(obj)
+import pandas as pd
+import json
+
+def get_default_values(filename):
+    created_file_name = 'default_vector_values.json'
+    df = pd.read_csv(filename)
+    df = df[['weight_norm','ram_norm','price_norm','graphics_norm','disk_norm','battery_norm','display_norm','processor_norm','max_memory_norm']]
+    data_dictionary = {}
+    for i in df.columns:
+        data_dictionary[i.split('_norm')[0]] = df[i].median()
+    print(data_dictionary)
+    with open(created_file_name, "w") as outfile:
+        json.dump(data_dictionary, outfile)
+    print('default_vector_values.json file created in the current directory..')
+    return created_file_name
+
+def read_default_values(filename):
+    with open(filename,'r') as file:
+        data = json.load(file)
+        return data
+
+dictionary = read_default_values('default_vector_values.json')
+print(dictionary)
+
+
+def get_index_and_value(dicitionary,key):
+
+    keys = list(dictionary.keys())
+    index_val,value = keys.index(key),dicitionary[key]
+    return index_val,value
+
+# print(get_index_and_value(dicitionary=dictionary,key='ram'))
+
+
+
+
