@@ -84,7 +84,6 @@ def user_choices():
 
     db = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
 
-
     if flask.request.method == 'GET':
         resp = db.get_question_with_id(0)
         resp['next_question_number'] = 1
@@ -104,18 +103,14 @@ def user_choices():
         if not questions_data and question_number != db.get_last_record_id():
             return jsonify({"Error": "invalid question number..."}), 404
 
+        ## database connection for options collection
         options_collection_db = Database(database_url,database_name,'options')
         results = options_collection_db.get_question_with_id(id_val=question_number) 
         if not results:
                 return jsonify("Invalid Choice chosen..."), 404
 
-        ## database connection for options collection
-        options_collection_db = Database(database_url,database_name,'options')
-        results = options_collection_db.get_question_with_id(id_val=question_number) 
         indexes, values = results[str(choice_number)]
         filters = results['original_vals'][int(choice_number)]
-        
-
         ## for first time user initializing default vector first
         default_median_dictionary = read_default_values()
         if 'default' not in session:
