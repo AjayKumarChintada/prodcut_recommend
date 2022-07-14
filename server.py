@@ -89,10 +89,6 @@ def user_choices():
         resp['next_question_number'] = 1
         return jsonify({'question_data':resp})
 
-        # return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 1}})
-        
-        # return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 0}})
-
     else:
         data = request.get_json(force=True)
         question_number = data['question_number']
