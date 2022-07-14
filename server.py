@@ -2,10 +2,9 @@
 import json
 import flask
 from flask import Flask, request, session, jsonify
-from chec import get_index_and_value
-from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values
+from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
-
+from database_utilities import get_last_record_id, get_question_with_id
 
 app = Flask(__name__)
 app.secret_key = 'alpha'
@@ -78,34 +77,16 @@ def user_choices():
         json object: array of user vector already updated
     """
 
-    question_dictionary = {
-        0: {
-            'question': "How often you travell along with your laptop?",
-            'options': ["yes, I travell a lot.", "Not much, Usaully stay at my desk.", "Do not have any specification .", ]
-        },
-
-        1: {
-            "question":  "What is your laptop typically used for ?",
-            'options': ['gaming and media development', 'office and general business purpose', 'student usage/design and development']
-
-        },
-
-        2: {
-
-            "question": "What is the price range you want for your laptop ?",
-            'options': ["less than 30000 / low range", "30000 to 50000 / mid range", "more than 50000 / high range"]
-
-        },
-        3: {
-            "question": "Do you store a lot of content in your device?",
-            'options': ['Yes, a lot. Need large storages', 'No I dont. Use it only for official purposes', ' Moderate usage, nothing specific. Anything works']
-
-        }
-
-    }
+   
 
     if flask.request.method == 'GET':
-        return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 1}})
+        resp = get_question_with_id(0)
+        resp['next_question_number'] = 1
+        return jsonify({'question_data':resp})
+
+        # return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 1}})
+        
+        # return jsonify({'question_data': {"question": question_dictionary[0]['question'], 'options': question_dictionary[0]['options'], 'next_question_number': 0}})
 
     else:
         data = request.get_json(force=True)
@@ -199,7 +180,9 @@ def user_choices():
                 }
             }
         }
-        if question_number not in question_filters:
+        
+        questions_data = get_question_with_id(question_number+1)
+        if not questions_data and question_number != get_last_record_id():
             return jsonify({"Error": "invalid question number..."}), 404
 
         if question_number in question_filters:
@@ -233,7 +216,7 @@ def user_choices():
             'laptop_recommendations', session['default'], 10)
 
         # condition to handle last question
-        if question_number == len(question_dictionary)-1:
+        if question_number == get_last_record_id():
             return jsonify({
                 'laptop_data': resp,
                 'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
@@ -241,9 +224,10 @@ def user_choices():
             }), 200
 
         # questions
-        if question_number in question_dictionary:
+        if questions_data:
+            questions_data['next_question_number'] = question_number+1
             return jsonify({'laptop_data': resp,
-                            "question_data": {"question": question_dictionary[question_number+1]['question'], 'options': question_dictionary[question_number+1]['options'], 'next_question_number': question_number+1},
+                            "question_data": questions_data,
                             'filters': session['filters']
                             }), 200
 

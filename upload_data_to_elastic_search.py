@@ -1,4 +1,3 @@
-from email.policy import default
 from elasticsearch import Elasticsearch, helpers
 import pandas as pd
 import json

@@ -157,3 +157,10 @@ def get_index_and_value(dicitionary,key):
     return index_val,value
 
 
+
+
+def get_index_and_value(dicitionary,key):
+
+    keys = list(dicitionary.keys())
+    index_val,value = keys.index(key),dicitionary[key]
+    return index_val,value
