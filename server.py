@@ -99,104 +99,22 @@ def user_choices():
         question_number = data['question_number']
         choice_number = data['choice_number']
 
-        question_filters = {
-            0: {
-                # indexes:  weight battery display
-                # option number: [[index,replacements]
-                0: [[0, 5, 6], [1, 1.75, 1.75]],
-                1: [[0, 5, 6], [1.75, 1.2, 2]],
-                2: [[0, 5, 6], [1.5, 1.5, 1.5]],
-                'original_vals': {
-                    0: [
-                        ['weight', 1.07, 'Kg', '~'],
-                        ['battery', 11.5, 'Hours', '~'],
-                        ['display', 16.24, 'Inches', '~']
-                    ],
-                    1: [
-                        ['weight', 2.51, 'Kg', '~'],
-                        ['battery', 6.0, 'Hours', '~'],
-                        ['display', 17.8, 'Inches', '~']
-                    ],
-                    2: [
-                        ['weight', 2.05, 'Kg', '~'],
-                        ['battery', 10, 'Hours', '~'],
-                        ['display', 14.5, 'Inches', '~']
-                    ]
-                }
-            },
-            # RAM, Graphic ram, processor speed
-            1: {
-                0: [[1, 3, -2], [2, 1.75, 2]],
-                1: [[1, 3, -2], [1, 1, 1]],
-                2: [[1, 3, -2], [1.5, 1.4, 1.5]],
-                'original_vals': {
-                    0: [
-                        ['ram', 16, 'GB', '~'],
-                        ['graphics', True, 'GPU', '='],
-                        ['processor', 4.7, 'GHz', '~']
-                    ],
-                    1: [
-                        ['ram', 4.0, 'GB', '~'],
-                        ['graphics',  False, 'GPU', '='],
-                        ['processor', 1.1, 'GHz', '~']
-                    ],
-                    2: [
-                        ['ram', 10, 'GB', '~'],
-                        ['graphics',  True, 'GPU', '='],
-                        ['processor', 2.90, 'GHz', '~']
-                    ]
-                }
-            },
-            # price
-            2: {
-                0: [[2], [1]],
-                1: [[2], [1.5]],
-                2: [[2], [2]],
-                'original_vals': {
-                    0: [
-                        ['price', 19990, 'INR', '~']
-                    ],
-                    1: [
-                        ['price', 68490, 'INR', '~']
-                    ],
-                    2: [
-                        ['price', 116990, 'INR', '~']
-                    ]
-                }
-            },
-            # disk size, max memory support
-            3: {
-                0: [[4, 8], [2, 2]],
-                1: [[4, 8], [1, 1]],
-                2: [[4, 8], [1.5, 1.5]],
-                'original_vals': {
-                    0: [
-                        ['disk', 1024, 'GB', '~'],
-                        ['max_memory',  32, 'GB', '~']
-
-                    ],
-                    1: [
-                        ['disk', 64, 'GB', '~'],
-                        ['max_memory',  4, 'GB', '~']
-                    ],
-                    2: [
-                        ['disk', 512, 'GB', '~'],
-                        ['max_memory',  18, 'GB', '~']
-                    ]
-                }
-            }
-        }
         
         questions_data = db.get_question_with_id(question_number+1)
         if not questions_data and question_number != db.get_last_record_id():
             return jsonify({"Error": "invalid question number..."}), 404
 
-        if question_number in question_filters:
-            if choice_number not in question_filters[question_number]:
+        options_collection_db = Database(database_url,database_name,'options')
+        results = options_collection_db.get_question_with_id(id_val=question_number) 
+        if not results:
                 return jsonify("Invalid Choice chosen..."), 404
 
-        indexes, values = question_filters[question_number][choice_number]
-        filters = question_filters[question_number]['original_vals'][choice_number]
+        ## database connection for options collection
+        options_collection_db = Database(database_url,database_name,'options')
+        results = options_collection_db.get_question_with_id(id_val=question_number) 
+        indexes, values = results[str(choice_number)]
+        filters = results['original_vals'][int(choice_number)]
+        
 
         ## for first time user initializing default vector first
         default_median_dictionary = read_default_values()
