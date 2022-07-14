@@ -4,10 +4,11 @@ import flask
 from flask import Flask, request, session, jsonify
 from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
-from database_utilities import get_last_record_id, get_question_with_id
+from database_utilities import Database
 
 app = Flask(__name__)
 app.secret_key = 'alpha'
+config = read_default_values('config.json')
 
 
 @app.route('/laptop_recommendations/del')
@@ -76,11 +77,16 @@ def user_choices():
     Returns:
         json object: array of user vector already updated
     """
+    database_url = config['db_url']
+    database_name = config['db_name']
+    collection_name = config['collection_name']
 
-   
+
+    db = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
+
 
     if flask.request.method == 'GET':
-        resp = get_question_with_id(0)
+        resp = db.get_question_with_id(0)
         resp['next_question_number'] = 1
         return jsonify({'question_data':resp})
 
@@ -181,8 +187,8 @@ def user_choices():
             }
         }
         
-        questions_data = get_question_with_id(question_number+1)
-        if not questions_data and question_number != get_last_record_id():
+        questions_data = db.get_question_with_id(question_number+1)
+        if not questions_data and question_number != db.get_last_record_id():
             return jsonify({"Error": "invalid question number..."}), 404
 
         if question_number in question_filters:
@@ -216,7 +222,7 @@ def user_choices():
             'laptop_recommendations', session['default'], 10)
 
         # condition to handle last question
-        if question_number == get_last_record_id():
+        if question_number == db.get_last_record_id():
             return jsonify({
                 'laptop_data': resp,
                 'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
