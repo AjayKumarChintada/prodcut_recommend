@@ -165,6 +165,34 @@ def remove_filter():
     else:
         return jsonify({'msg': 'filter not applied yet..'}), 404
 
+
+def update_filter_values(index,filters,new_filter):
+    filter_to_be_updated = filters[index]
+    for key in new_filter:
+        if key in filter_to_be_updated:
+            filter_to_be_updated[key] = new_filter[key]
+        else:
+            return 0
+    filters[index] = filter_to_be_updated
+    return filters
+
+@app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
+@cross_origin()
+def edit_filter():
+    payload = request.get_json(force=True)
+    flag, indexval = search_and_get_index(session['filters'], payload)
+    if flag:
+        new_filters = update_filter_values(indexval,session['filters'],payload)
+        if new_filters:
+            session['filters'] = new_filters
+            session.modified = True
+            return jsonify(session['filters']), 200
+
+        return jsonify({'msg': 'Bad syntax'}), 400
+    else:
+        return jsonify({'msg': 'Filter not found or not appliet yet..'}), 404
+
+
 @app.route('/laptop_recommendations/current_vector')
 @cross_origin()
 def get_current_vector():
