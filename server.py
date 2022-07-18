@@ -201,9 +201,12 @@ def edit_filter():
 
             #update the filter value to be processed with cosine similarity in backend..
             if 'value' in payload:
-                filter_updated_value = payload['value']
-                db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
-                session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
+                if payload['value'] == False:
+                    session['default'][filter_index_value] = 1 
+                else:
+                    filter_updated_value = payload['value']
+                    db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
+                    session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
             session.modified = True
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
 
