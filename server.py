@@ -100,7 +100,7 @@ def user_choices():
             return jsonify({"Error": "invalid question number..."}), 404
 
         ## database connection for options collection
-        options_collection_db = Database(database_url,database_name,'options')
+        options_collection_db = Database(database_url,database_name,config['options_collection'])
         results = options_collection_db.get_question_with_id(id_val=question_number) 
         if not results:
                 return jsonify("Invalid Choice chosen..."), 404
