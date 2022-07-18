@@ -37,23 +37,22 @@ class Database:
     return resp
 
 
-  def column_min_max(self,filter_name):
+  def min_max_normalised_value(self,filter_name,value):
     """get min and max values of filter to normalise the data 
 
     Args:
         filter_name (string): filter name 
     """
-    max_doc = list(self.connect_to_collection().find().sort(filter_name, -1).limit(1))
-    min_doc = list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))
-    max_doc.extend(min_doc)
-    # return max_doc.extend(min_doc)
-    return max_doc
+    max_value = float(list(self.connect_to_collection().find().sort(filter_name, -1).limit(1))[0][filter_name])
+    min_value = float(list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))[0][filter_name])
+    
+    normalised_value = (value - min_value) / (max_value - min_value) + 1
+    print(max_value,min_value,normalised_value,"normalised_values")
+    return normalised_value
+
+  
+    
 
     
 
-# config = read_default_values('config.json')
-
-# db = Database(config['db_url_local'],config['db_name'],config['dataset_collection'])
-# for i in db.column_min_max('price'):
-#   print(i)
 

@@ -9,7 +9,8 @@ from database_utilities import Database
 app = Flask(__name__)
 app.secret_key = 'alpha'
 config = read_default_values('config.json')
-
+database_url = config['db_url']
+database_name = config['db_name']
 
 @app.route('/laptop_recommendations/del')
 @cross_origin()
@@ -53,7 +54,7 @@ def make_filter_object(array: list):
     return data
 
 
-def search_and_get_index(obj, b):
+def search_and_get_index(filters, filter):
     """search for same filter and returns 1 and its index value if found else 0
 
     Args:
@@ -63,8 +64,8 @@ def search_and_get_index(obj, b):
     Returns:
         (1,index_val)/ 0: tuple of index value and flag or 0
     """
-    for indexval in range(len(obj)):
-        if b['filter'] == obj[indexval]['filter']:
+    for indexval in range(len(filters)):
+        if filter['filter'] == filters[indexval]['filter']:
             return 1, indexval
     return 0, None
 
@@ -77,8 +78,7 @@ def user_choices():
     Returns:
         json object: array of user vector already updated
     """
-    database_url = config['db_url']
-    database_name = config['db_name']
+   
     collection_name = config['collection_name']
 
 
@@ -151,8 +151,9 @@ def user_choices():
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
+    if 'filters' not in session:
+        return jsonify({'msg': 'no filters created'}), 404
     flag, indexval = search_and_get_index(session['filters'], filter_to_be_removed)
-
     if flag:
         median_dictionary = read_default_values()
         session['filters'].pop(indexval)
@@ -164,6 +165,8 @@ def remove_filter():
         return jsonify({'laptop_data:': resp,'msg':'{} removed'.format(filter_key)}), 200
     else:
         return jsonify({'msg': 'filter not applied yet..'}), 404
+    
+
 
 
 def update_filter_values(index,filters,new_filter):
@@ -180,17 +183,37 @@ def update_filter_values(index,filters,new_filter):
 @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
+    if 'filters' not in session:
+        return jsonify({'msg': 'filters not applied yet'}), 404    
+
     flag, indexval = search_and_get_index(session['filters'], payload)
     if flag:
+        ## get the filter name and its index position from the config file
+        filter_name = payload['filter']
+        median_dictionary = read_default_values()
+        filter_index_value = list(median_dictionary.keys()).index(filter_name)
+
+        #update the filter value in front end
         new_filters = update_filter_values(indexval,session['filters'],payload)
         if new_filters:
+            print("Default metrics: ",session['default'])
             session['filters'] = new_filters
+
+            #update the filter value to be processed with cosine similarity in backend..
+            if 'value' in payload:
+                filter_updated_value = payload['value']
+                db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
+                session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
             session.modified = True
-            return jsonify(session['filters']), 200
+            resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+
+            print("updated metrics: ",session['default'])
+            return jsonify({'laptop_data': resp,'filters': session['filters']}), 200
 
         return jsonify({'msg': 'Bad syntax'}), 400
     else:
         return jsonify({'msg': 'Filter not found or not appliet yet..'}), 404
+
 
 
 @app.route('/laptop_recommendations/current_vector')
