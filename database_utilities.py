@@ -1,5 +1,7 @@
 import pymongo
 
+from product_recommendation import read_default_values
+
 
 class Database:
   def __init__(self, db_url, db_name, collection_name):
@@ -34,4 +36,24 @@ class Database:
     print('data inserted successfully...')
     return resp
 
+
+  def column_min_max(self,filter_name):
+    """get min and max values of filter to normalise the data 
+
+    Args:
+        filter_name (string): filter name 
+    """
+    max_doc = list(self.connect_to_collection().find().sort(filter_name, -1).limit(1))
+    min_doc = list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))
+    max_doc.extend(min_doc)
+    # return max_doc.extend(min_doc)
+    return max_doc
+
+    
+
+config = read_default_values('config.json')
+
+db = Database(config['db_url_local'],config['db_name'],config['dataset_collection'])
+for i in db.column_min_max('price'):
+  print(i)
 

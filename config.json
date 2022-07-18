@@ -3,5 +3,6 @@
     "db_url": "mongodb+srv://laptop-rec:laptoprecommendation@cluster0.c7o9q.mongodb.net/test",
     "db_name" : "product_recommendation",
     "collection_name" : "questions",
-    "options_collection": "options"
+    "options_collection": "options",
+    "dataset_collection": "dataset"
 }
