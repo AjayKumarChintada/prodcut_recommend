@@ -201,6 +201,7 @@ def edit_filter():
 
             #update the filter value to be processed with cosine similarity in backend..
             if 'value' in payload:
+                ## to handle boolean values.. 
                 if payload['value'] == False:
                     session['default'][filter_index_value] = 1 
                 else:
