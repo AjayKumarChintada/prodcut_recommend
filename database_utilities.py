@@ -51,9 +51,9 @@ class Database:
 
     
 
-config = read_default_values('config.json')
+# config = read_default_values('config.json')
 
-db = Database(config['db_url_local'],config['db_name'],config['dataset_collection'])
-for i in db.column_min_max('price'):
-  print(i)
+# db = Database(config['db_url_local'],config['db_name'],config['dataset_collection'])
+# for i in db.column_min_max('price'):
+#   print(i)
 
