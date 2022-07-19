@@ -1,4 +1,3 @@
-
 import json
 import flask
 from flask import Flask, request, session, jsonify
@@ -6,12 +5,16 @@ from product_recommendation import cosine_in_elastic_search, update_vector,read_
 from flask_cors import CORS, cross_origin
 from database_utilities import Database
 
+
+
+
 app = Flask(__name__)
 app.secret_key = 'alpha'
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
+ 
 @app.route('/laptop_recommendations/del')
 @cross_origin()
 def clear_session():
