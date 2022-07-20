@@ -116,7 +116,7 @@ def main():
     }
     ## index name
     # index_name = input("Enter index_name: ")
-    filename = 'updated_dataset_200.csv'
+    filename = 'updated_dataset_500.csv'
     index_name = 'laptop_recommendations'
     el = connect_elastic()
 
