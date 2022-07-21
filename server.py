@@ -10,8 +10,8 @@ app = Flask(__name__)
 app.secret_key = 'alphaisgreat'
 app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
-
+sess = Session(app)
+sess.init_app(app)
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
