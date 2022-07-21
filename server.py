@@ -3,11 +3,15 @@ from flask import Flask, request, session, jsonify
 from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
 from database_utilities import Database
+from flask_session import Session
 
 
 app = Flask(__name__)
 app.secret_key = 'alphaisgreat'
-CORS(app)
+app.config["SESSION_PERMANENT"] = True
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
@@ -164,7 +168,7 @@ def remove_filter():
         filter_key  = filter_to_be_removed['filter']
         index_val, median_value = get_index_and_value(median_dictionary,filter_key)
         session['default'][index_val] = median_value
-        session.modified = True
+        # session.modified = True
         resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
         return jsonify({'laptop_data:': resp,'msg':'{} removed'.format(filter_key)}), 200
     else:
@@ -212,7 +216,7 @@ def edit_filter():
                     filter_updated_value = payload['value']
                     db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
                     session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
-            session.modified = True
+            # session.modified = True
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
             print("updated metrics: ",session['default'])
             return jsonify({'laptop_data': resp,'filters': session['filters']}), 200
