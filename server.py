@@ -6,8 +6,8 @@ from database_utilities import Database
 
 
 app = Flask(__name__)
+app.secret_key = 'alphaisgreat'
 CORS(app)
-app.secret_key = 'alpha'
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
@@ -15,7 +15,6 @@ database_name = config['db_name']
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-    app.permanent_session_lifetime = True
  
 @app.route('/laptop_recommendations/del')
 @cross_origin()
