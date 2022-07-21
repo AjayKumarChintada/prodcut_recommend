@@ -16,9 +16,7 @@ config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
-@app.before_request
-def make_session_permanent():
-    session.permanent = True
+
  
 @app.route('/laptop_recommendations/del')
 @cross_origin()
