@@ -1,4 +1,3 @@
-import json
 import flask
 from flask import Flask, request, session, jsonify
 from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
@@ -6,14 +5,17 @@ from flask_cors import CORS, cross_origin
 from database_utilities import Database
 
 
-
-
 app = Flask(__name__)
+CORS(app)
 app.secret_key = 'alpha'
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = True
  
 @app.route('/laptop_recommendations/del')
 @cross_origin()
@@ -213,7 +215,6 @@ def edit_filter():
                     session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
             session.modified = True
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
-
             print("updated metrics: ",session['default'])
             return jsonify({'laptop_data': resp,'filters': session['filters']}), 200
 
