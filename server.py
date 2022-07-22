@@ -8,9 +8,10 @@ from flask_session import Session
 
 app = Flask(__name__)
 app.secret_key = 'alphaisgreat'
+app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
-app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True, REMEMBER_COOKIE_SECURE = True)
-Session(app)
+sess = Session(app)
+sess.init_app(app)
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
