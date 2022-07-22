@@ -10,21 +10,21 @@ from database_utilities import Database
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-# app.secret_key = 'alpha'
+app.secret_key = 'alpha'
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
  
 @app.route('/laptop_recommendations/del')
-@cross_origin()
+# @cross_origin()
 def clear_session():
     session.clear()
     return jsonify({'msg': 'session cleared..'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
-@cross_origin()
+# @cross_origin()
 def get_recommendations():
     """takes a vector and gives the similar items 10 by default
 
@@ -75,7 +75,7 @@ def search_and_get_index(filters, filter):
 
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
-@cross_origin()
+# @cross_origin()
 def user_choices():
     """takes question number and choice number 
 
@@ -151,7 +151,7 @@ def user_choices():
                             }), 200
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
-@cross_origin()
+# @cross_origin()
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
@@ -184,7 +184,7 @@ def update_filter_values(index,filters,new_filter):
     return filters
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
-@cross_origin()
+# @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
     if 'filters' not in session:
@@ -225,7 +225,7 @@ def edit_filter():
 
 
 @app.route('/laptop_recommendations/current_vector')
-@cross_origin()
+# @cross_origin()
 def get_current_vector():
     return jsonify({'msg': session['default']}), 200
 
