@@ -9,8 +9,8 @@ from database_utilities import Database
 
 
 app = Flask(__name__)
-app.secret_key = 'alpha'
 CORS(app, supports_credentials=True)
+# app.secret_key = 'alpha'
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
