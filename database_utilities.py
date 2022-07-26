@@ -1,8 +1,5 @@
 import pymongo
-
 from product_recommendation import read_default_values
-
-
 class Database:
   def __init__(self, db_url, db_name, collection_name):
     self.db_url = db_url
@@ -47,11 +44,21 @@ class Database:
     min_value = float(list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))[0][filter_name])
     
     normalised_value = (value - min_value) / (max_value - min_value) + 1
-    print(max_value,min_value,normalised_value,"normalised_values")
+    # print(max_value,min_value,normalised_value,"normalised_values")
     return normalised_value
-
   
+  def min_max_of_filter(self,filter_name,numerical_data_type=True):
+    """returns min max if the data type is numerical else return the categories
+
+    Args:
+        filter_name (str): filtername to retrieve data
+        numerical_data_type (bool, optional): to know to retrieve min max or unique vals. Defaults to True.
+    """
+    if numerical_data_type:
+      max_value = float(list(self.connect_to_collection().find().sort(filter_name, -1).limit(1))[0][filter_name])
+      min_value = float(list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))[0][filter_name])
     
+      
 
     
 
