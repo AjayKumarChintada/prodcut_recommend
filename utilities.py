@@ -1,7 +1,7 @@
 import uuid
 def generate_uuid():
-    # make a UUID using a SHA-1 hash of a namespace UUID and a name
-    return str(uuid.uuid5(uuid.NAMESPACE_DNS, 'python.org'))
+    # make a UUID using 4 with random 
+    return str(uuid.uuid4())
 
 
 
