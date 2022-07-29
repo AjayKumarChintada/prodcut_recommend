@@ -14,6 +14,8 @@ config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
+
+##global dictionary to store sessions..
 sessions = {}
  
 @app.route('/laptop_recommendations/del')
@@ -39,9 +41,6 @@ def get_recommendations():
         resp = cosine_in_elastic_search(
             data['index_name'], data['vector'], 10)
     return {'data': resp}
-
-
-
 
 
 
@@ -132,6 +131,7 @@ def user_choices():
                                 ,'session': data['session']}), 200
         return jsonify({"msg":"Invalid Session id "})
 
+
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
 @cross_origin()
 def remove_filter():
@@ -157,10 +157,6 @@ def remove_filter():
     return jsonify({"msg":"Invalid Session id "})
 
     
-        
-
-
-
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
 @cross_origin()
@@ -171,7 +167,8 @@ def edit_filter():
         session = sessions[payload['session']]
         if 'filters' not in session:
             return jsonify({'msg': 'filters not applied yet'}), 404    
-
+        
+        session_id = payload.pop('session')
         flag, indexval = search_and_get_index(session['filters'], payload)
         if flag:
             ## get the filter name and its index position from the config file
@@ -197,7 +194,7 @@ def edit_filter():
                 # session.modified = True
                 resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
                 # print("updated metrics: ",session['default'])
-                return jsonify({'laptop_data': resp,'filters': session['filters']}), 200
+                return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
 
             return jsonify({'msg': 'Bad syntax'}), 400
         else:

@@ -47,7 +47,7 @@ class Database:
     min_value = float(list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))[0][filter_name])
     
     normalised_value = (value - min_value) / (max_value - min_value) + 1
-    print(max_value,min_value,normalised_value,"normalised_values")
+    # print(max_value,min_value,normalised_value,"normalised_values")
     return normalised_value
 
   
