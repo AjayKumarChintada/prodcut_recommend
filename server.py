@@ -3,7 +3,10 @@ from flask import Flask, request, session, jsonify
 from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
 from database_utilities import Database
-from flask_session import Session
+
+from pymongo import MongoClient
+from product_recommendation import read_default_values
+
 
 from utilities import *
 
@@ -13,6 +16,7 @@ app = Flask(__name__)
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
+
 
 
 ##global dictionary to store sessions..
@@ -132,6 +136,38 @@ def user_choices():
         return jsonify({"msg":"Invalid Session id "})
 
 
+
+@app.route("/laptop_recommendations/min_max_filter_values", methods=["GET"])
+@cross_origin()
+def min_max_filter_value():
+    default_vector_values = read_default_values('default_vector_values.json')
+    collection_name = config['dataset_collection']
+    #filter_collection = config['min_max_filter_values']
+    db_filter = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
+    filter_list = list(default_vector_values.keys())
+    filter_dict = {}
+    list_filter = []
+    for i in range(0,len(filter_list)):
+        filter_dict = {'max_value': db_filter.min_max_value(filter_name=filter_list[i])[1], 
+                                        'min_value':db_filter.min_max_value(filter_name=filter_list[i])[2],
+                                        'filter': db_filter.min_max_value(filter_name=filter_list[i])[0],
+                                        'data_type': 'Number'}
+        list_filter.append(filter_dict)
+
+    brand_list = db_filter.distinct_non_numeric_values('brand')[1]
+    filter_name = db_filter.distinct_non_numeric_values('brand')[0]
+    #filtername = db_filter.distinct_non_numeric_values('brand')[0]
+    #type2 = db_filter.distinct_non_numeric_values('brand')[2]
+    filter_dict = {'filter':filter_name,'values':brand_list, 'data_type': 'String'}
+    list_filter.append(filter_dict)
+
+    #filter_collection.insert(list_filter)  
+
+    return jsonify(list_filter)
+      
+
+
+
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
 @cross_origin()
 def remove_filter():
@@ -156,13 +192,17 @@ def remove_filter():
 
     return jsonify({"msg":"Invalid Session id "})
 
-    
+
+
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
 @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
-
+    
+    db_minmax = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['min_max_filter'])
+    filter_minmax = db_minmax.find_all_values()
+    
     if 'session' in payload and payload['session'] in sessions:
         session = sessions[payload['session']]
         if 'filters' not in session:
@@ -176,34 +216,61 @@ def edit_filter():
             median_dictionary = read_default_values()
             filter_index_value = list(median_dictionary.keys()).index(filter_name)
 
-            #update the filter value in front end
-            new_filters = update_filter_values(indexval,session['filters'],payload)
-            if new_filters:
-                # print("Default metrics: ",session['default'])
-                session['filters'] = new_filters
+            
+            flag1, edited_filter_index = search_and_get_index(filter_minmax, {'filter': filter_name} )
+            if flag1:
 
-                #update the filter value to be processed with cosine similarity in backend..
-                if 'value' in payload:
-                    ## to handle boolean values.. 
-                    if payload['value'] == False:
-                        session['default'][filter_index_value] = 1 
-                    else:
-                        filter_updated_value = payload['value']
-                        db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
-                        session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
-                # session.modified = True
-                resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
-                # print("updated metrics: ",session['default'])
-                return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
+                filter_min_value = filter_minmax[edited_filter_index]['min_value']
+                filter_max_value = filter_minmax[edited_filter_index]['max_value']
+            
+                #update the filter value in front end
+                new_filters = update_filter_values(indexval,session['filters'],payload)
+                
+                if new_filters:
+                    # print("Default metrics: ",session['default'])
+                    session['filters'] = new_filters
+
+                    #update the filter value to be processed with cosine similarity in backend..
+                    if 'value' in payload:
+
+                        ## to handle boolean values.. 
+                        if payload['value'] == False:
+                            session['default'][filter_index_value] = 1 
+
+                        else:
+                            
+
+                            if 'operator' in payload:
+                                
+                                operator_value = payload['operator']
+
+                                if operator_value == "<=":
+                                    filter_updated_value = (payload['value']+filter_min_value)/2
+                                elif operator_value == ">=":
+                                    filter_updated_value = (payload['value']+filter_max_value)/2
+                                elif operator_value == "==":
+                                    filter_updated_value = payload['value']
+                                else:
+                                    filter_updated_value = payload['value']
+
+                                db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
+                                session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
+                    
+                            else:
+                                filter_updated_value = payload['value']
+                                db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
+                                session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
+
+                    # session.modified = True
+                    resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+                    # print("updated metrics: ",session['default'])
+                    return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
 
             return jsonify({'msg': 'Bad syntax'}), 400
         else:
             return jsonify({'msg': 'Filter not found or not appliet yet..'}), 404
     return jsonify({"msg":"Invalid Session id "})
     
-
-
-
 
 
 

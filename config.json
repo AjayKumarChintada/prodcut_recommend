@@ -4,5 +4,6 @@
     "db_name" : "product_recommendation",
     "collection_name" : "questions",
     "options_collection": "options",
-    "dataset_collection": "dataset"
+    "dataset_collection": "dataset",
+    "min_max_filter": "min_max_filter_values"
 }

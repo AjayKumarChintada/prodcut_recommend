@@ -47,8 +47,34 @@ class Database:
     # print(max_value,min_value,normalised_value,"normalised_values")
     return normalised_value
 
-  
+
+  def min_max_value(self, filter_name):
+    """get min and max values of filter to normalise the data 
+
+    Args:
+        filter_name (string): filter name 
+    """
+    max_value = float(list(self.connect_to_collection().find().sort(filter_name, -1).limit(1))[0][filter_name])
+    min_value = float(list(self.connect_to_collection().find().sort(filter_name, 1).limit(1))[0][filter_name])
+    #distinct_values = self.connect_to_collection().distinct(filter_name)
+    #type1 = type(max_value)
     
+    #normalised_value = (value - min_value) / (max_value - min_value) + 1
+    return(filter_name, max_value, min_value)
+    #return normalised_value
+
+  def distinct_non_numeric_values(self, filter_name):
+    distinct_values = self.connect_to_collection().distinct(filter_name)
+    #type1 = type(distinct_values[0])
+    return(filter_name, distinct_values)
+
+  def find_all_values(self):
+    cursor = list(self.connect_to_collection().find())
+    return cursor
+
+
+   
+  
 
     
 
