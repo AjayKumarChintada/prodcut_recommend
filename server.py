@@ -13,6 +13,8 @@ from utilities import *
 
 app = Flask(__name__)
 
+CORS(app)
+
 config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
@@ -23,14 +25,14 @@ database_name = config['db_name']
 sessions = {}
  
 @app.route('/laptop_recommendations/del')
-@cross_origin()
+# @cross_origin()
 def clear_session():
     session.clear()
     return jsonify({'msg': 'session cleared..'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
-@cross_origin()
+# @cross_origin()
 def get_recommendations():
     """takes a vector and gives the similar items 10 by default
 
@@ -50,7 +52,7 @@ def get_recommendations():
 
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
-@cross_origin()
+# @cross_origin()
 def user_choices():
     """takes question number and choice number 
 
@@ -138,7 +140,7 @@ def user_choices():
 
 
 @app.route("/laptop_recommendations/min_max_filter_values", methods=["GET"])
-@cross_origin()
+# @cross_origin()
 def min_max_filter_value():
     default_vector_values = read_default_values('default_vector_values.json')
     collection_name = config['dataset_collection']
@@ -169,7 +171,7 @@ def min_max_filter_value():
 
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
-@cross_origin()
+# @cross_origin()
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
@@ -196,7 +198,7 @@ def remove_filter():
 
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
-@cross_origin()
+# @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
     
