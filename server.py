@@ -16,14 +16,14 @@ database_name = config['db_name']
 
  
 @app.route('/laptop_recommendations/del')
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def clear_session():
     session.clear()
     return jsonify({'msg': 'session cleared..'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def get_recommendations():
     """takes a vector and gives the similar items 10 by default
 
@@ -74,7 +74,7 @@ def search_and_get_index(filters, filter):
 
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def user_choices():
     """takes question number and choice number 
 
@@ -150,7 +150,7 @@ def user_choices():
                             }), 200
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
@@ -183,7 +183,7 @@ def update_filter_values(index,filters,new_filter):
     return filters
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
     if 'filters' not in session:
@@ -224,7 +224,7 @@ def edit_filter():
 
 
 @app.route('/laptop_recommendations/current_vector')
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def get_current_vector():
     return jsonify({'msg': session['default']}), 200
 
