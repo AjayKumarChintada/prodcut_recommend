@@ -188,7 +188,7 @@ def remove_filter():
             session['default'][index_val] = median_value
             # session.modified = True
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
-            return jsonify({'laptop_data:': resp,'msg':'{} removed'.format(filter_key),"session": payload['session']}), 200
+            return jsonify({'laptop_data': resp,'msg':'{} removed'.format(filter_key),"session": payload['session']}), 200
         else:
             return jsonify({'msg': 'filter not applied yet..'}), 404
 
