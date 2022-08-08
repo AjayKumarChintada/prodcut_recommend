@@ -72,12 +72,14 @@ class es_instance:
         return cls.__singleton_instance
 
 
-def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: int):
+def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: int, filter_name = '' ,filter_value =''):
     '''
         args: 
             index_name: database name or index name in es tems
             query_vector: users vector 
             no_of_values: how many recommendations he want
+            filter_name: if the user wants to search based on the brand
+            filter_value: the filter string which we need to check on the similar products
 
         returns: 
             responses: es object with cosine similarity matches of 
@@ -100,6 +102,10 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
             }
         }
     }
+
+    if filter_name and filter_value:
+        search_query['query']['script_score']['query'] ={'match':{filter_name: filter_value}}
+
     responses = es.search(index=index_name, body=search_query)
     similarities = []
     for data in responses['hits']['hits']:
@@ -114,6 +120,7 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
         }
         similarities.append(response_to_be_shown)
     return similarities
+
 
 
 def update_vector(arr, indexes, values):
@@ -160,7 +167,6 @@ def get_index_and_value(dicitionary,key):
 
 
 def get_index_and_value(dicitionary,key):
-
     keys = list(dicitionary.keys())
     index_val,value = keys.index(key),dicitionary[key]
     return index_val,value
