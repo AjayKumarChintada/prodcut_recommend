@@ -211,6 +211,7 @@ def edit_filter():
             return jsonify({'msg': 'filters not applied yet'}), 404    
         
         session_id = payload.pop('session')
+        datatype_id = payload.pop('datatype')
         flag, indexval = search_and_get_index(session['filters'], payload)
         if flag:
             ## get the filter name and its index position from the config file
@@ -236,10 +237,11 @@ def edit_filter():
                     if 'value' in payload:
 
                         ## to handle boolean values.. 
-                        if payload['value'] == False:
-                            session['default'][filter_index_value] = 1 
+                        if datatype_id == "Boolean":
+                            if payload['value'] == False:
+                                session['default'][filter_index_value] = 1 
 
-                        else:
+                        elif datatype_id == "Number":
                             
 
                             if 'operator' in payload:
