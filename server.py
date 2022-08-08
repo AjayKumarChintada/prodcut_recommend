@@ -201,25 +201,39 @@ def remove_filter():
 # @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
-    
+    if 'data_type' not in payload or 'filter' not in payload or 'session' not in payload:
+        return jsonify({'msg': 'Insufficient payload data'}), 400
+
+    filter_name = payload['filter']
     db_minmax = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['min_max_filter'])
     filter_minmax = db_minmax.find_all_values()
     
-    if 'session' in payload and payload['session'] in sessions:
+    if payload['session'] in sessions:
         session = sessions[payload['session']]
         if 'filters' not in session:
             return jsonify({'msg': 'filters not applied yet'}), 404    
         
         session_id = payload.pop('session')
-        datatype_id = payload.pop('datatype')
+        data_type = payload.pop('data_type')
+
+        #to handle enumerate data
+        if data_type == "Enum" and 'value' in payload:
+            resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10,filter_name,payload['value'])
+            filter_data = {'filter':filter_name,"value":payload['value']}
+            flag, indexval = search_and_get_index(session['filters'], filter_data)
+            print(flag,indexval)
+            if not flag :
+                session['filters'].append(filter_data)
+            else:
+                session['filters'][indexval] = filter_data
+            return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
+
         flag, indexval = search_and_get_index(session['filters'], payload)
         if flag:
             ## get the filter name and its index position from the config file
-            filter_name = payload['filter']
             median_dictionary = read_default_values()
             filter_index_value = list(median_dictionary.keys()).index(filter_name)
 
-            
             flag1, edited_filter_index = search_and_get_index(filter_minmax, {'filter': filter_name} )
             if flag1:
 
@@ -237,17 +251,13 @@ def edit_filter():
                     if 'value' in payload:
 
                         ## to handle boolean values.. 
-                        if datatype_id == "Boolean":
+                        if data_type == "Boolean":
                             if payload['value'] == False:
                                 session['default'][filter_index_value] = 1 
 
-                        elif datatype_id == "Number":
-                            
-
-                            if 'operator' in payload:
-                                
+                        elif data_type == "Number":
+                            if 'operator' in payload:   
                                 operator_value = payload['operator']
-
                                 if operator_value == "<=":
                                     filter_updated_value = (payload['value']+filter_min_value)/2
                                 elif operator_value == ">=":
@@ -265,9 +275,7 @@ def edit_filter():
                                 db = Database(db_url=config['db_url'],db_name=database_name,collection_name=config['dataset_collection'])
                                 session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
 
-                    # session.modified = True
                     resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
-                    # print("updated metrics: ",session['default'])
                     return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
 
             return jsonify({'msg': 'Bad syntax'}), 400
