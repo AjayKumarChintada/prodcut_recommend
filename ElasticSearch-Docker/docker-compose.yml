@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  elasticsearch:
+    build: elasticsearch/
+    environment:
+      - "discovery.type=single-node"
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=alpha
+      - xpack.security.enabled=true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    container_name: elasticsearch
+
+  

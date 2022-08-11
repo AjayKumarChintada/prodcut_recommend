@@ -1,0 +1,3 @@
+# Use elastic opensource version as runtime
+FROM docker.elastic.co/elasticsearch/elasticsearch:8.2.2
+

@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch
 
 def connect_elastic():
-    client = Elasticsearch("http://localhost:9200")
+    client = Elasticsearch("http://localhost:9200",http_auth=('elastic','alpha'))
     if client.ping():
         print("yay.. connected ")
 
