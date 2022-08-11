@@ -1,14 +1,15 @@
 import flask
 from flask import Flask, request, session, jsonify
-from product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
+from utils.product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
-from database_utilities import Database
+from utils.database_utilities import Database
 
 from pymongo import MongoClient
-from product_recommendation import read_default_values
+# from utils import product_recommendation.read_default_values
+from utils.product_recommendation import read_default_values
 
 
-from utilities import *
+from utils.utilities import *
 
 
 app = Flask(__name__)
@@ -77,7 +78,6 @@ def user_choices():
     else:
 
         data = request.get_json(force=True)
-
         question_number = data['question_number']
         choice_number = data['choice_number']
 
