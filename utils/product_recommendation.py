@@ -1,4 +1,5 @@
 
+from unittest import result
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
 import json
@@ -109,17 +110,33 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
     responses = es.search(index=index_name, body=search_query)
     similarities = []
     for data in responses['hits']['hits']:
-        response_to_be_shown = {
-            "brand": data['_source']['brand'],
-            "series": data['_source']['series'],
-            "price": data['_source']['price'],
-            "url": data['_source']['url'],
-            'rating': float(data['_source']['rating'][:3]),
-            "image_url": data['_source']['image_url'],
-            "display": data['_source']["display"]
-        }
+        response_to_be_shown = data["_source"]
+        # response_to_be_shown = {
+        #     "brand": data['_source']['brand'],
+        #     "series": data['_source']['series'],
+        #     "price": data['_source']['price'],
+        #     "url": data['_source']['url'],
+        #     'rating': float(data['_source']['rating'][:3]),
+        #     "image_url": data['_source']['image_url'],
+        #     "display": data['_source']["display"]
+        # }
         similarities.append(response_to_be_shown)
     return similarities
+
+
+results = cosine_in_elastic_search('laptop_recommendations',[1.5]*9,10)
+for data in results :
+    print(data)
+    print()
+    print()
+
+
+
+
+
+
+
+
 
 
 
