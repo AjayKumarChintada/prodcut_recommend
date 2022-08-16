@@ -3,6 +3,7 @@ from flask import Flask, request, session, jsonify
 from utils.product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
 from flask_cors import CORS, cross_origin
 from utils.database_utilities import Database
+from bson.json_util import dumps
 
 from pymongo import MongoClient
 # from utils import product_recommendation.read_default_values
@@ -142,30 +143,33 @@ def user_choices():
 @app.route("/laptop_recommendations/min_max_filter_values", methods=["GET"])
 # @cross_origin()
 def min_max_filter_value():
-    default_vector_values = read_default_values('default_vector_values.json')
-    collection_name = config['dataset_collection']
-    #filter_collection = config['min_max_filter_values']
-    db_filter = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
-    filter_list = list(default_vector_values.keys())
-    filter_dict = {}
-    list_filter = []
-    for i in range(0,len(filter_list)):
-        filter_dict = {'max_value': db_filter.min_max_value(filter_name=filter_list[i])[1], 
-                                        'min_value':db_filter.min_max_value(filter_name=filter_list[i])[2],
-                                        'filter': db_filter.min_max_value(filter_name=filter_list[i])[0],
-                                        'data_type': 'Number'}
-        list_filter.append(filter_dict)
+    #default_vector_values = read_default_values('default_vector_values.json')
+    #collection_name = config['dataset_collection']
+    filter_collection = config['min_max_filter']
+    db_filter = Database(db_url=database_url,db_name=database_name,collection_name= filter_collection)
+    cursor = db_filter.connect_to_collection().find()
+    json_Data = dumps(list(cursor))
 
-    brand_list = db_filter.distinct_non_numeric_values('brand')[1]
-    filter_name = db_filter.distinct_non_numeric_values('brand')[0]
+    #filter_list = list(default_vector_values.keys())
+    #filter_dict = {}
+    #list_filter = []
+    #for i in range(0,len(filter_list)):
+    #    filter_dict = {'max_value': db_filter.min_max_value(filter_name=filter_list[i])[1], 
+    #                                    'min_value':db_filter.min_max_value(filter_name=filter_list[i])[2],
+    #                                    'filter': db_filter.min_max_value(filter_name=filter_list[i])[0],
+    #                                    'data_type': 'Number'}
+    #    list_filter.append(filter_dict)
+
+    #brand_list = db_filter.distinct_non_numeric_values('brand')[1]
+    #filter_name = db_filter.distinct_non_numeric_values('brand')[0]
     #filtername = db_filter.distinct_non_numeric_values('brand')[0]
     #type2 = db_filter.distinct_non_numeric_values('brand')[2]
-    filter_dict = {'filter':filter_name,'values':brand_list, 'data_type': 'String'}
-    list_filter.append(filter_dict)
+    #filter_dict = {'filter':filter_name,'values':brand_list, 'data_type': 'String'}
+    #list_filter.append(filter_dict)
 
     #filter_collection.insert(list_filter)  
 
-    return jsonify(list_filter)
+    return jsonify(json_Data)
       
 
 
