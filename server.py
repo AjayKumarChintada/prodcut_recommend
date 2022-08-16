@@ -22,7 +22,6 @@ database_url = config['db_url']
 database_name = config['db_name']
 
 
-
 ##global dictionary to store sessions..
 sessions = {}
  
@@ -63,8 +62,6 @@ def user_choices():
     """
    
     collection_name = config['collection_name']
-
-
     db = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
 
     if flask.request.method == 'GET':
@@ -121,6 +118,7 @@ def user_choices():
             resp = cosine_in_elastic_search(
                 'laptop_recommendations', session['default'], 10)
 
+            resp = modify_response_laptop_data(resp,session['filters'])
             # condition to handle last question
             if question_number == db.get_last_record_id():
                 return jsonify({
@@ -132,10 +130,11 @@ def user_choices():
             # questions
             if questions_data:
                 questions_data['next_question_number'] = question_number+1
-                return jsonify({'laptop_data': resp,
+                resp = {'laptop_data': resp,
                                 "question_data": questions_data,
                                 'filters': session['filters']
-                                ,'session': data['session']}), 200
+                                ,'session': data['session']}
+                return jsonify(resp), 200
         return jsonify({"msg":"Invalid Session id "})
 
 
@@ -192,6 +191,7 @@ def remove_filter():
             session['default'][index_val] = median_value
             # session.modified = True
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+            resp  = modify_response_laptop_data(resp,session['filters'])
             return jsonify({'laptop_data': resp,'msg':'{} removed'.format(filter_key),"session": payload['session']}), 200
         else:
             return jsonify({'msg': 'filter not applied yet..'}), 404
@@ -230,6 +230,7 @@ def edit_filter():
                 session['filters'].append(filter_data)
             else:
                 session['filters'][indexval] = filter_data
+            resp  = modify_response_laptop_data(resp,session['filters'])
             return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
 
         flag, indexval = search_and_get_index(session['filters'], payload)
@@ -280,6 +281,8 @@ def edit_filter():
                                 session['default'][filter_index_value] = db.min_max_normalised_value(filter_name=filter_name,value=filter_updated_value)
 
                     resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10)
+                    resp  = modify_response_laptop_data(resp,session['filters'])
+
                     return jsonify({'laptop_data': resp,'filters': session['filters'],"session":session_id}), 200
 
             return jsonify({'msg': 'Bad syntax'}), 400

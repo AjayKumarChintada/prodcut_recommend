@@ -46,3 +46,35 @@ def search_and_get_index(filters, filter):
         if filter['filter'] == filters[indexval]['filter']:
             return 1, indexval
     return 0, None
+
+
+def modify_response_laptop_data(laptop_data,filters):
+    temp_data =[]
+    filters = [i['filter']for i in filters]
+    for laptop in laptop_data:
+        default_data = {
+            "brand": laptop['brand'],
+            "series": laptop['series'],
+            "price": laptop['price'],
+            "url": laptop['url'],
+            'rating': float(laptop['rating'][:3]),
+            "image_url": laptop['image_url'],
+            "display": laptop["display"]
+        }
+        for filter in filters:
+            norm_filter = filter+'_norm'
+            if norm_filter in laptop:
+                default_data[filter+'_strength'] = strength(laptop[norm_filter])
+        temp_data.append(default_data)
+    return temp_data
+    
+
+def strength(normalised_value):
+    old_value = normalised_value 
+    old_min = 1
+    old_max = 2
+    new_max = 10
+    new_min = 1
+    strength_val = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
+    return round(strength_val)
+
