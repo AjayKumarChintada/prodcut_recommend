@@ -148,7 +148,7 @@ def min_max_filter_value():
     filter_collection = config['min_max_filter']
     db_filter = Database(db_url=database_url,db_name=database_name,collection_name= filter_collection)
     cursor = db_filter.connect_to_collection().find({}, {'_id': False})
-    json_Data = dumps(list(cursor))
+    json_Data = list(cursor)
 
     #filter_list = list(default_vector_values.keys())
     #filter_dict = {}
@@ -169,7 +169,7 @@ def min_max_filter_value():
 
     #filter_collection.insert(list_filter)  
 
-    return json_Data
+    return jsonify({"filter_ranges":json_Data})
       
 
 
