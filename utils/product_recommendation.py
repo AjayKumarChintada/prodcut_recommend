@@ -124,12 +124,6 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
     return similarities
 
 
-results = cosine_in_elastic_search('laptop_recommendations',[1.5]*9,10)
-for data in results :
-    print(data)
-    print()
-    print()
-
 
 
 

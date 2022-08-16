@@ -147,7 +147,7 @@ def min_max_filter_value():
     #collection_name = config['dataset_collection']
     filter_collection = config['min_max_filter']
     db_filter = Database(db_url=database_url,db_name=database_name,collection_name= filter_collection)
-    cursor = db_filter.connect_to_collection().find()
+    cursor = db_filter.connect_to_collection().find({}, {'_id': False})
     json_Data = dumps(list(cursor))
 
     #filter_list = list(default_vector_values.keys())
@@ -169,7 +169,7 @@ def min_max_filter_value():
 
     #filter_collection.insert(list_filter)  
 
-    return jsonify(json_Data)
+    return json_Data
       
 
 
@@ -225,7 +225,7 @@ def edit_filter():
             resp = cosine_in_elastic_search('laptop_recommendations', session['default'], 10,filter_name,payload['value'])
             filter_data = {'filter':filter_name,"value":payload['value']}
             flag, indexval = search_and_get_index(session['filters'], filter_data)
-            print(flag,indexval)
+            
             if not flag :
                 session['filters'].append(filter_data)
             else:
