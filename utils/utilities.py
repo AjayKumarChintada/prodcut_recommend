@@ -75,6 +75,9 @@ def strength(normalised_value):
     old_max = 2
     new_max = 10
     new_min = 1
-    strength_val = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
+    OldRange = (old_max - old_min)  
+    NewRange = (new_max - new_min)  
+    strength_val = (((old_value - old_min) * NewRange) / OldRange) + new_min
+    # strength_val = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
     return round(strength_val)
 

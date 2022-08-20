@@ -12,5 +12,8 @@ services:
       - 9200:9200
       - 9300:9300
     container_name: elasticsearch
+    restart: unless-stopped
+
+
 
   
