@@ -10,8 +10,18 @@ services:
       - xpack.security.enabled=true
     ports:
       - 9200:9200
-      - 9300:9300
     container_name: elasticsearch
+    restart: unless-stopped
+
+  flask_server:
+    build: python_docker/
+    ports:
+      - 5001:5001
+    volumes:
+      - .:/code
+    container_name: flask_server
+    depends_on:
+      - elasticsearch
     restart: unless-stopped
 
 

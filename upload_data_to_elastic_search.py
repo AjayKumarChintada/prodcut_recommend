@@ -1,15 +1,30 @@
 from elasticsearch import Elasticsearch, helpers
 import pandas as pd
 import json
+import time
+
+time.sleep(30)
 
 def connect_elastic():
-    client = Elasticsearch("http://localhost:9200",http_auth=('elastic', 'alpha'))
-    if client.ping():
-        print("yay.. connected ")
+    es = Elasticsearch(hosts=[{"host": "elasticsearch"}],http_auth=('elastic', 'alpha'),retry_on_timeout=True)
+    # es = Elasticsearch(hosts=[{"host": "elasticsearch"}], retry_on_timeout=True)
 
-    else:
-        print("Cannot connect.")
-    return client
+    for _ in range(100):
+        try:
+            # make sure the cluster is available
+            es.cluster.health(wait_for_status="yellow")
+            return es
+        except ConnectionError:
+            time.sleep(2)
+
+
+
+    # if client.ping():
+    #     print("yay.. connected ")
+
+    # else:
+    #     print("Cannot connect.")
+    # return client
 
 
 def make_index(es_client, index_name, mappings):
@@ -52,7 +67,7 @@ def make_records(file_name):
     return df.to_dict('records')
 
 
-def main():
+def upload_data_es():
 
     mappings = {
         "mappings": {
@@ -137,4 +152,3 @@ def main():
         print("Index name already present ..")
 
 
-main()

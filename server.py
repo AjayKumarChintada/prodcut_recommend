@@ -1,19 +1,14 @@
-#!/usr/bin/python3
-
 import flask
-from flask import Flask, request, session, jsonify
-from utils.product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
-from flask_cors import CORS, cross_origin
-from utils.database_utilities import Database
-from bson.json_util import dumps
-
+from flask import Flask, jsonify, request, session
+from flask_cors import CORS
 from pymongo import MongoClient
-# from utils import product_recommendation.read_default_values
-from utils.product_recommendation import read_default_values
 
-
+from upload_data_to_elastic_search import upload_data_es
+from utils.database_utilities import Database
+from utils.product_recommendation import (cosine_in_elastic_search,
+                                          get_index_and_value,
+                                          read_default_values, update_vector)
 from utils.utilities import *
-
 
 app = Flask(__name__)
 
@@ -23,19 +18,19 @@ config = read_default_values('config.json')
 database_url = config['db_url']
 database_name = config['db_name']
 
+## upload data to elastic search 
+upload_data_es()
 
 ##global dictionary to store sessions..
 sessions = {}
  
 @app.route('/laptop_recommendations/del')
-# @cross_origin()
 def clear_session():
     session.clear()
     return jsonify({'msg': 'session cleared..'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
-# @cross_origin()
 def get_recommendations():
     """takes a vector and gives the similar items 10 by default
 
@@ -55,7 +50,6 @@ def get_recommendations():
 
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
-# @cross_origin()
 def user_choices():
     """takes question number and choice number 
 
@@ -142,7 +136,6 @@ def user_choices():
 
 
 @app.route("/laptop_recommendations/min_max_filter_values", methods=["GET"])
-# @cross_origin()
 def min_max_filter_value():
     #default_vector_values = read_default_values('default_vector_values.json')
     #collection_name = config['dataset_collection']
@@ -176,7 +169,6 @@ def min_max_filter_value():
 
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
-# @cross_origin()
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
@@ -204,7 +196,6 @@ def remove_filter():
 
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
-# @cross_origin()
 def edit_filter():
     payload = request.get_json(force=True)
     if 'data_type' not in payload or 'filter' not in payload or 'session' not in payload:

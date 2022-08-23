@@ -3,6 +3,7 @@ from unittest import result
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
 import json
+from upload_data_to_elastic_search import connect_elastic
 
 
 def normalise_min_max(df):
@@ -49,14 +50,7 @@ def update_user_vector(prev_vec, change_dict):
         prev_vec[ind] = change_dict["value"][i]
     return prev_vec
 
-def connect_elastic():
-    client = Elasticsearch("http://localhost:9200",http_auth=('elastic','alpha'))
-    if client.ping():
-        print("yay.. connected ")
 
-    else:
-        print("Cannot connect.")
-    return client
 
 #### for single instance of db connections through out whole program
 class es_instance:
