@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import flask
 from flask import Flask, request, session, jsonify
 from utils.product_recommendation import cosine_in_elastic_search, update_vector,read_default_values,get_index_and_value
