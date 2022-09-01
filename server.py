@@ -2,7 +2,7 @@ import flask
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 from pymongo import MongoClient
-
+from functools import wraps
 from upload_data_to_elastic_search import upload_data_es
 from utils.database_utilities import Database
 from utils.product_recommendation import (cosine_in_elastic_search,
@@ -24,10 +24,30 @@ upload_data_es()
 ##global dictionary to store sessions..
 sessions = {}
  
-@app.route('/laptop_recommendations/del')
-def clear_session():
-    session.clear()
-    return jsonify({'msg': 'session cleared..'})
+
+
+def required_params(required):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            _json = request.get_json()
+            ## to check missing keys of json object
+            missing = [r for r in required if r not in _json]
+            if missing:
+                response = {
+                    "status": "error",
+                    "message": "Request JSON is missing some required param key",
+                    "missing": missing
+                }
+                return jsonify(response), 400
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+    
+
+@app.route('/')
+def home():
+    return jsonify({'msg': 'Welcome to the home page...'})
 
 
 @app.route("/laptop_recommendations/similar", methods=["POST"])
@@ -50,6 +70,7 @@ def get_recommendations():
 
 
 @app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
+@required_params(required=['question_numer','choice_number','session'])
 def user_choices():
     """takes question number and choice number 
 
@@ -169,6 +190,7 @@ def min_max_filter_value():
 
 
 @app.route('/laptop_recommendations/remove_filter', methods=['POST'])
+@required_params(required=['session','filter'])
 def remove_filter():
     payload = request.get_json(force=True)
     filter_to_be_removed = {'filter': payload['filter']}
@@ -196,6 +218,7 @@ def remove_filter():
 
 
 @app.route('/laptop_recommendations/edit_filter',methods= ['POST'])
+@required_params(required=['data_type','session','filter'])
 def edit_filter():
     payload = request.get_json(force=True)
     if 'data_type' not in payload or 'filter' not in payload or 'session' not in payload:
