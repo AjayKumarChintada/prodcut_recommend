@@ -38,7 +38,7 @@ def required_params(required):
 
 
 @app.route("/admin/api_check", methods=["POST",'GET'])
-@required_params(required=['session'])
+@required_params(required=['session','name'])
 def get_recommendations():
     if flask.request.method == "GET":
         return {"msg":"get request"}
