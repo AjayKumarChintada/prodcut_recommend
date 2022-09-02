@@ -1,5 +1,5 @@
 import pymongo
-from utils.product_recommendation import read_default_values
+from product_recommendation import read_default_values
 class Database:
   def __init__(self, db_url, db_name, collection_name):
     self.db_url = db_url

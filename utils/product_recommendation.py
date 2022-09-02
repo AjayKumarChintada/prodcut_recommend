@@ -1,5 +1,4 @@
 
-from unittest import result
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
 import json
