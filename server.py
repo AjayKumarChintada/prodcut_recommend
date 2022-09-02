@@ -1,6 +1,5 @@
-from crypt import methods
 import flask
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
 from functools import wraps
@@ -308,11 +307,7 @@ def edit_filter():
     return jsonify({"msg":"Invalid Session id "})
     
 
-@app.route('/admin/add_question',methods=['POST'])
-@required_params(required=['_id','question','options'])
-def add_question():
-    payload = request.get_json(force=True)
-    return {'payload':payload}
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')

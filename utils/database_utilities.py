@@ -29,8 +29,12 @@ class Database:
     return cursor
 
   def insert_documents(self, documents):
-    resp = self.connect_to_collection().insert_many(documents)
-    print('data inserted successfully...')
+    if isinstance(documents,dict):
+      print('Inserted :',documents)
+      resp = self.connect_to_collection().insert_one(documents)
+    else:
+      resp = self.connect_to_collection().insert_many(documents)
+      print('data inserted successfully...')
     return resp
 
 

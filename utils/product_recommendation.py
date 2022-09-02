@@ -1,5 +1,4 @@
 
-from unittest import result
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
 import json
@@ -116,16 +115,6 @@ def cosine_in_elastic_search(index_name: str, query_vector: list, no_of_values: 
         # }
         similarities.append(response_to_be_shown)
     return similarities
-
-
-
-
-
-
-
-
-
-
 
 
 def update_vector(arr, indexes, values):
