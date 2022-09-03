@@ -1,9 +1,8 @@
-import re
 import flask
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from utils.database_utilities import Database
-from utils.product_recommendation import *
+# from utils.product_recommendation import *
 from functools import wraps
 from utils.utilities import *
 
@@ -14,6 +13,8 @@ CORS(app)
 
 DB_URL = "mongodb://localhost:27017/"
 DB_NAME = "tvs"
+questions_collection = 'questions'
+
 
 
 def required_params(required):
@@ -43,12 +44,34 @@ def home():
 @app.route('/admin/add_question', methods=['POST'])
 @required_params(required=['_id', 'question', 'options'])
 def add_question():
-    questions_collection = 'questions'
     payload = request.get_json(force=True)
-    # return {'payload': payload} 
     db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=questions_collection)
-    db.insert_documents(payload)
-    return jsonify({"msg":"inserted"}),200
+    if db.connect_to_collection().find_one( {"_id" : payload['_id']}) is None:
+        db.insert_documents(payload)
+        return jsonify({"msg":"inserted"}),200
+    else:
+        return jsonify({"msg":"question number already exist"})
+
+
+
+@app.route('/admin/edit_question',methods = ['POST'])
+@required_params(required=['_id'])
+def edit_question():
+    payload = request.get_json(force=True)
+    db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=questions_collection)
+    record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
+    
+    if record is not None:
+        ##update the record 
+        ##find a way to edit the option number ... ##
+        db.connect_to_collection().update_one({"_id" : payload['_id']},{"$set":payload})
+        return jsonify({"msg":"record updated"}),200
+    return jsonify({"msg":"nope"}),200
+    
+
+
+
+
 
 
 
