@@ -60,20 +60,19 @@ def edit_question():
     payload = request.get_json(force=True)
     db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=questions_collection)
     record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
-    
-    if record is not None:
-        ##update the record 
-        ##find a way to edit the option number ... ##
+    if record is not None :
+        if 'option_number'  in payload and 'value'  in payload :
+            current_options = record['options']
+            option_number = payload['option_number']
+            #update the option with new value and remove the edits to update the payload data as document
+            current_options[option_number] =  payload['value']
+            del payload['option_number']
+            del payload['value']
+            payload['options'] = current_options
         db.connect_to_collection().update_one({"_id" : payload['_id']},{"$set":payload})
-        return jsonify({"msg":"record updated"}),200
-    return jsonify({"msg":"nope"}),200
-    
-
-
-
-
-
-
+        print("Payload:: ",payload)
+        return jsonify({"msg":"options updated"}),200
+    return jsonify({"msg":"invalid question number..."}),400
 
 
 
