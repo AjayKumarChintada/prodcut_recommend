@@ -2,7 +2,21 @@
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
 import json
-from upload_data_to_elastic_search import connect_elastic
+import time
+
+
+def connect_elastic():
+    es = Elasticsearch(hosts=[{"host": "elasticsearch"}],http_auth=('elastic', 'alpha'),retry_on_timeout=True)
+    # es = Elasticsearch(hosts=[{"host": "elasticsearch"}], retry_on_timeout=True)
+
+    for _ in range(100):
+        try:
+            # make sure the cluster is available
+            es.cluster.health(wait_for_status="yellow")
+            return es
+        except ConnectionError:
+            time.sleep(2)
+
 
 
 def normalise_min_max(df):
@@ -143,6 +157,7 @@ def read_default_values(filename = 'default_vector_values.json'):
         return 'file error '
 
 
+
 def get_index_and_value(dicitionary,key):
     """used to get the index value and updated value of array
 
@@ -153,14 +168,10 @@ def get_index_and_value(dicitionary,key):
     Returns:
         tuple: returns index value and the value to update in array
     """
+    
     keys = list(dicitionary.keys())
     index_val,value = keys.index(key),dicitionary[key]
     return index_val,value
 
 
 
-
-def get_index_and_value(dicitionary,key):
-    keys = list(dicitionary.keys())
-    index_val,value = keys.index(key),dicitionary[key]
-    return index_val,value

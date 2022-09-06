@@ -50,21 +50,6 @@ def home():
     return jsonify({'msg': 'Welcome to the home page...'})
 
 
-@app.route("/laptop_recommendations/similar", methods=["POST"])
-def get_recommendations():
-    """takes a vector and gives the similar items 10 by default
-
-    Returns:
-        object: similar matches using cosine similarity
-    """
-    data = request.get_json(force=True)
-    if 'no_of_values' in data and data['no_of_values']:
-        resp = cosine_in_elastic_search(
-            data['index_name'], data['vector'], data['no_of_values'])
-    else:
-        resp = cosine_in_elastic_search(
-            data['index_name'], data['vector'], 10)
-    return {'data': resp}
 
 
 

@@ -1,9 +1,11 @@
+from crypt import methods
 import flask
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from utils.database_utilities import Database
 # from utils.product_recommendation import *
 from functools import wraps
+from utils.product_recommendation import get_index_and_value, read_default_values
 from utils.utilities import *
 
 app = Flask(__name__)
@@ -14,6 +16,8 @@ CORS(app)
 DB_URL = "mongodb://localhost:27017/"
 DB_NAME = "tvs"
 questions_collection = 'questions'
+options_collection = 'options'
+
 
 
 
@@ -48,15 +52,20 @@ def add_question():
     db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=questions_collection)
     if db.connect_to_collection().find_one( {"_id" : payload['_id']}) is None:
         db.insert_documents(payload)
-        return jsonify({"msg":"inserted"}),200
+        return jsonify({"msg":"inserted","inserted_data":payload}),200
     else:
         return jsonify({"msg":"question number already exist"})
 
 
 
-@app.route('/admin/edit_question',methods = ['POST'])
+@app.route('/admin/edit_question',methods = ['PUT'])
 @required_params(required=['_id'])
 def edit_question():
+    """takes 'option_number' and 'value' as payload to edit option else send the 'question' with proper '_id' to edit
+
+    Returns:
+         success or failure message
+    """
     payload = request.get_json(force=True)
     db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=questions_collection)
     record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
@@ -73,6 +82,22 @@ def edit_question():
         print("Payload:: ",payload)
         return jsonify({"msg":"options updated"}),200
     return jsonify({"msg":"invalid question number..."}),400
+
+@app.route('/admin/create_options',methods=['POST'])
+@required_params(required=['_id',"option_number","filters_values"])
+def create_options():
+    ##expecting payload filter names as arrays for now
+    ##might need to change the functionality later
+    payload = request.get_json(force=True)
+    filters_affected = list(payload['filters_values'].keys())
+    dictionary_of_filter_values = read_default_values()
+    indexes = []
+    for filter in filters_affected:
+        # print(filter)
+        index,_ =get_index_and_value(dictionary_of_filter_values,filter)
+        indexes.append(index)
+    return jsonify({'indexes':indexes}),200
+
 
 
 
