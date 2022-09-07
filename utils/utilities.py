@@ -81,3 +81,6 @@ def strength(normalised_value):
     # strength_val = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
     return round(strength_val)
 
+
+def get_indexes_values_from_db(data,choice_number):
+    return data["index_values"],data[choice_number]

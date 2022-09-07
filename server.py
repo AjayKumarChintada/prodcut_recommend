@@ -95,6 +95,8 @@ def user_choices():
             if not results:
                     return jsonify("Invalid Choice chosen..."), 404
 
+            ### when  admin implementation method function get_indexes_values_from_db(results,str(choice_number))-> indexes,values will be called  
+            # indexes ,values = get_indexes_values_from_db(results,str(choice_number))
             indexes, values = results[str(choice_number)]
             filters = results['original_vals'][int(choice_number)]
             ## for first time user initializing default vector first

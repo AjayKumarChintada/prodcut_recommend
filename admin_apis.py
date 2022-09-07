@@ -1,4 +1,4 @@
-from crypt import methods
+from collections import OrderedDict
 import flask
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -86,17 +86,47 @@ def edit_question():
 @app.route('/admin/create_options',methods=['POST'])
 @required_params(required=['_id',"option_number","filters_values"])
 def create_options():
-    ##expecting payload filter names as arrays for now
+    
+    ##expecting payload filter names as json object for now
     ##might need to change the functionality later
     payload = request.get_json(force=True)
-    filters_affected = list(payload['filters_values'].keys())
-    dictionary_of_filter_values = read_default_values()
-    indexes = []
-    for filter in filters_affected:
-        # print(filter)
-        index,_ =get_index_and_value(dictionary_of_filter_values,filter)
-        indexes.append(index)
-    return jsonify({'indexes':indexes}),200
+    db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=options_collection)
+    record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
+    payload['filters_values'] = OrderedDict(sorted(payload['filters_values'].items()))
+
+    if record is None:
+        filters_affected = list(payload['filters_values'].keys())
+        dictionary_of_filter_values = read_default_values()
+        indexes = []
+        for filter in filters_affected:
+            index,_ = get_index_and_value(dictionary_of_filter_values,filter)
+            indexes.append(index)
+        resp = {
+            "_id": payload["_id"],
+            "index_values":indexes
+        }
+        db.insert_documents(resp)
+    values = list(payload['filters_values'].values())
+    resp = {
+        payload['option_number']:values
+    }
+    db.connect_to_collection().update_one({"_id" : payload['_id']},{"$set":resp})
+
+    return jsonify({'indexes':resp}),200
+
+
+    
+"""
+@app.route('/admin/test',methods=['POST'])
+def test():
+    payload = request.get_json(force=True)
+    db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=options_collection)
+    # record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
+    results = db.get_question_with_id(id_val=payload['_id']) 
+            indexes, values = results[str(choice_number)]
+
+    return results
+"""
 
 
 
