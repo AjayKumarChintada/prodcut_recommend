@@ -1,4 +1,6 @@
 from collections import OrderedDict
+from crypt import methods
+import json
 import flask
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -115,20 +117,15 @@ def create_options():
     return jsonify({'indexes':resp}),200
 
 
-    
-"""
-@app.route('/admin/test',methods=['POST'])
-def test():
-    payload = request.get_json(force=True)
-    db = Database(db_url=DB_URL,db_name=DB_NAME, collection_name=options_collection)
-    # record = db.connect_to_collection().find_one( {"_id" : payload['_id']})
-    results = db.get_question_with_id(id_val=payload['_id']) 
-            indexes, values = results[str(choice_number)]
-
-    return results
-"""
+@app.route('/admin/show_features',methods = ['GET'])
+def show_features():
+        dictionary_of_filter_values = read_default_values()
+        return jsonify({'features':list(dictionary_of_filter_values.keys())})
 
 
+@app.route('/admin/edit_options',methods = ['POST'])
+def edit_options():
+    pass
 
 
 if __name__ == '__main__':
