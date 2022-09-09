@@ -1,13 +1,14 @@
+import os
+from datetime import datetime 
 from collections import OrderedDict
-from crypt import methods
-import json
-import flask
+from functools import wraps
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from utils.database_utilities import Database
-# from utils.product_recommendation import *
-from functools import wraps
-from utils.product_recommendation import get_index_and_value, read_default_values
+from utils.product_recommendation import (get_index_and_value,
+                                          read_default_values)
 from utils.utilities import *
 
 app = Flask(__name__)
@@ -127,6 +128,26 @@ def show_features():
 def edit_options():
     pass
 
+
+
+ALLOWED_EXTENSIONS = set(['csv'])
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/admin/upload',methods=['POST'])
+def upload():
+    file = request.files['file']
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        new_filename = f'{filename.split(".")[0]}.csv'
+        save_location = os.path.join('admin','uploaded_files', new_filename)
+        file.save(save_location)
+        #return send_from_directory('output', output_file)
+        return jsonify({'msg':'check the file in datsets'})
+
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')
