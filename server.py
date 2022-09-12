@@ -53,11 +53,23 @@ def home():
 
 
 
+@app.route("/laptop_recommendations/user_choices")
+def get_first_question():
+    collection_name = config['collection_name']
+    db = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
+    session_id = generate_uuid()
+    #creating a dictionary for every user 
+    sessions[session_id] = {}
+    resp = db.get_question_with_id(0)
+    resp['next_question_number'] = 1
+    # resp['session'] = session_id
+    return jsonify({'question_data':resp,'session': session_id})
 
 
 
-@app.route("/laptop_recommendations/user_choices", methods=["POST", "GET"])
-@required_params(required=['question_numer','choice_number','session'])
+
+@app.route("/laptop_recommendations/user_choices", methods=["POST"])
+@required_params(required=['question_number','choice_number','session'])
 def user_choices():
     """takes question number and choice number 
 
@@ -65,83 +77,73 @@ def user_choices():
         json object: array of user vector already updated
     """
    
+    data = request.get_json(force=True)
+    question_number = data['question_number']
+    choice_number = data['choice_number']
     collection_name = config['collection_name']
     db = Database(db_url=database_url,db_name=database_name,collection_name=collection_name)
 
-    if flask.request.method == 'GET':
-        session_id = generate_uuid()
-        #creating a dictionary for every user 
-        sessions[session_id] = {}
-        resp = db.get_question_with_id(0)
-        resp['next_question_number'] = 1
-        # resp['session'] = session_id
-        return jsonify({'question_data':resp,'session': session_id})
 
-    else:
 
-        data = request.get_json(force=True)
-        question_number = data['question_number']
-        choice_number = data['choice_number']
+    if 'session' in data and data['session'] in sessions:
+        # print(sessions)
+        session = sessions[data['session']]
+        # print('session exist and ',session)
+        questions_data = db.get_question_with_id(question_number+1)
+        if not questions_data and question_number != db.get_last_record_id():
+            return jsonify({"Error": "invalid question number..."}), 404
 
-        if 'session' in data and data['session'] in sessions:
-            # print(sessions)
-            session = sessions[data['session']]
-            # print('session exist and ',session)
-            questions_data = db.get_question_with_id(question_number+1)
-            if not questions_data and question_number != db.get_last_record_id():
-                return jsonify({"Error": "invalid question number..."}), 404
+        ## database connection for options collection
+        options_collection_db = Database(database_url,database_name,config['options_collection'])
+        results = options_collection_db.get_question_with_id(id_val=question_number) 
+        if not results:
+                return jsonify("Invalid Choice chosen..."), 404
 
-            ## database connection for options collection
-            options_collection_db = Database(database_url,database_name,config['options_collection'])
-            results = options_collection_db.get_question_with_id(id_val=question_number) 
-            if not results:
-                    return jsonify("Invalid Choice chosen..."), 404
+        ### when  admin implementation method function get_indexes_values_from_db(results,str(choice_number))-> indexes,values will be called  
+        # indexes ,values = get_indexes_values_from_db(results,str(choice_number))
+        indexes, values = results[str(choice_number)]
+        filters = results['original_vals'][int(choice_number)]
+        ## for first time user initializing default vector first
+        default_median_dictionary = read_default_values()
+        if 'default' not in session:
+            vector = list(default_median_dictionary.values())
+            session['default'] = vector
 
-            ### when  admin implementation method function get_indexes_values_from_db(results,str(choice_number))-> indexes,values will be called  
-            # indexes ,values = get_indexes_values_from_db(results,str(choice_number))
-            indexes, values = results[str(choice_number)]
-            filters = results['original_vals'][int(choice_number)]
-            ## for first time user initializing default vector first
-            default_median_dictionary = read_default_values()
-            if 'default' not in session:
-                vector = list(default_median_dictionary.values())
-                session['default'] = vector
+        ## logic to append filters to backend
+        filter_objects = make_filter_object(filters)
+        if 'filters' not in session:
+            session['filters'] = filter_objects
+        else:
+            for filter_object in filter_objects:
+                flag, _ = search_and_get_index(
+                    session['filters'], filter_object)
+                if not flag:
+                    session['filters'].append(filter_object)
+    
+        # updating that default vector using payload
+        session['default'] = update_vector(session['default'], indexes, values)
+        # updating filters
+        resp = cosine_in_elastic_search(
+            'laptop_recommendations', session['default'], 10)
 
-            ## logic to append filters to backend
-            filter_objects = make_filter_object(filters)
-            if 'filters' not in session:
-                session['filters'] = filter_objects
-            else:
-                for filter_object in filter_objects:
-                    flag, _ = search_and_get_index(
-                        session['filters'], filter_object)
-                    if not flag:
-                        session['filters'].append(filter_object)
-        
-            # updating that default vector using payload
-            session['default'] = update_vector(session['default'], indexes, values)
-            # updating filters
-            resp = cosine_in_elastic_search(
-                'laptop_recommendations', session['default'], 10)
+        resp = modify_response_laptop_data(resp,session['filters'])
+        # condition to handle last question
+        if question_number == db.get_last_record_id():
+            return jsonify({
+                'laptop_data': resp,
+                'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
+                'filters': session['filters'],
+            'session': data['session']}), 200
 
-            resp = modify_response_laptop_data(resp,session['filters'])
-            # condition to handle last question
-            if question_number == db.get_last_record_id():
-                return jsonify({
-                    'laptop_data': resp,
-                    'question_data': {"question": 'All questions done', 'options': [], 'next_question_number': -1},
-                    'filters': session['filters'],
-                'session': data['session']}), 200
-
-            # questions
-            if questions_data:
-                questions_data['next_question_number'] = question_number+1
-                resp = {'laptop_data': resp,
-                                "question_data": questions_data,
-                                'filters': session['filters']
-                                ,'session': data['session']}
-                return jsonify(resp), 200
-        return jsonify({"msg":"Invalid Session id "})
+        # questions
+        if questions_data:
+            questions_data['next_question_number'] = question_number+1
+            resp = {'laptop_data': resp,
+                            "question_data": questions_data,
+                            'filters': session['filters']
+                            ,'session': data['session']}
+            return jsonify(resp), 200
+    return jsonify({"msg":"Invalid Session id "})
 
 
 
