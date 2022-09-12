@@ -308,7 +308,6 @@ def allowed_file(filename):
 @app.route('/admin/upload',methods=['POST'])
 def upload():
     file = request.files['file']
-    print(file)
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         new_filename = f'{filename.split(".")[0]}.csv'
