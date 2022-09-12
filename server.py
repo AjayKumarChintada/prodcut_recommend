@@ -1,6 +1,8 @@
 import flask
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from functools import wraps
 from upload_data_to_elastic_search import upload_data_es
@@ -294,6 +296,27 @@ def edit_filter():
     return jsonify({"msg":"Invalid Session id "})
     
 
+
+##### admin code 
+
+
+ALLOWED_EXTENSIONS = set(['csv'])
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/admin/upload',methods=['POST'])
+def upload():
+    file = request.files['file']
+    print(file)
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        new_filename = f'{filename.split(".")[0]}.csv'
+        save_location = os.path.join('admin','uploaded_files', new_filename)
+        file.save(save_location)
+        #return send_from_directory('output', output_file)
+        return jsonify({'msg':'Thanks for uploading'})
+    return jsonify({'msg':'Attach the csv file.'})
 
 
 if __name__ == '__main__':
