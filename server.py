@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
+import pandas as pd
 from functools import wraps
 from upload_data_to_elastic_search import upload_data_es
 from utils.database_utilities import Database
@@ -315,9 +316,12 @@ def upload():
         new_filename = f'{filename.split(".")[0]}.csv'
         save_location = os.path.join('admin','uploaded_files', new_filename)
         file.save(save_location)
-        #return send_from_directory('output', output_file)
-        return jsonify({'msg':'Thanks for uploading'})
+        df = pd.read_csv(save_location)
+        columns_in_data = list(df.columns)
+        columns_in_data = [i for i in columns_in_data if not i.startswith('Unnamed')and i]
+        return jsonify({'msg':'Thanks for uploading','columns':columns_in_data})
     return jsonify({'msg':'Attach the csv file.'})
+
 
 
 if __name__ == '__main__':

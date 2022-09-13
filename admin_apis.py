@@ -134,18 +134,25 @@ ALLOWED_EXTENSIONS = set(['csv'])
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
+import pandas as pd 
 @app.route('/admin/upload',methods=['POST'])
 def upload():
     file = request.files['file']
     if file and allowed_file(file.filename):
+        
         filename = secure_filename(file.filename)
         new_filename = f'{filename.split(".")[0]}.csv'
         save_location = os.path.join('admin','uploaded_files', new_filename)
         file.save(save_location)
+        df = pd.read_csv(save_location)
+        columns_in_data = list(df.columns)
+        columns_in_data = [i for i in columns_in_data if not i.startswith('Unnamed')and i]
+        # return columns_in_data
+        
         #return send_from_directory('output', output_file)
-        return jsonify({'msg':'check the file in datsets'})
-
+        
+        return jsonify({'msg':'Thanks for uploading','columns':columns_in_data})
+    return jsonify({'msg':'Attach the csv file.'})
 
     
 
