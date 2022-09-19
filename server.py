@@ -301,7 +301,7 @@ def edit_filter():
 
 
 ##### admin code 
-
+from preprocess_upload import *
 
 ALLOWED_EXTENSIONS = set(['csv'])
 def allowed_file(filename):
@@ -316,9 +316,8 @@ def upload():
         new_filename = f'{filename.split(".")[0]}.csv'
         save_location = os.path.join('admin','uploaded_files', new_filename)
         file.save(save_location)
-        df = pd.read_csv(save_location)
-        columns_in_data = list(df.columns)
-        columns_in_data = [i for i in columns_in_data if not i.startswith('Unnamed')and i]
+        columns_in_data = show_columns(save_location)[1]
+
         return jsonify({'msg':'Thanks for uploading','columns':columns_in_data})
     return jsonify({'msg':'Attach the csv file.'})
 
