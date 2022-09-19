@@ -1,0 +1,1 @@
+{"Number": ["audio_wattage", "item_weight", "maximum_operating_distance", "price", "rating", "refresh_rate", "resolution", "standing_screen_display_size", "wattage"], "Enum": ["brand", "display_technology", "display_type"], "Boolean": ["supports_bluetooth_technology"]}

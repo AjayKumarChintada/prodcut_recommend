@@ -89,7 +89,6 @@ def edit_question():
 @app.route('/admin/create_options',methods=['POST'])
 @required_params(required=['_id',"option_number","filters_values"])
 def create_options():
-    
     ##expecting payload filter names as json object for now
     ##might need to change the functionality later
     payload = request.get_json(force=True)
