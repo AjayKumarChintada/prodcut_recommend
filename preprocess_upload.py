@@ -1,9 +1,21 @@
 # %%
-import pandas as pd 
 import json
-import os 
-#tv_data_set_path = '\Users\Asus\Downloads\tv_data_set.csv'
+import os
+import re
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+from utils.database_utilities import Database
+
 direcotry = os.path.join(os.getcwd(),'admin','uploaded_files','tv_data_set.csv')
+DB_URL = "mongodb://localhost:27017/"
+DB_NAME = "tvs"
+questions_collection = 'questions'
+options_collection = 'options'
+min_max_collection = 'min_max_filter_values'
+dataset_collection = 'dataset'
 
 
 def null_percentage(df):
@@ -34,25 +46,25 @@ df = show_columns(direcotry)[0]
 # %%
 ###on showing all the columns SME will give us features selected by sme and product information as payload
 ##INPUTS 
-FEATURES_SELECTED_BY_SME = ['price','refresh_rate','display_type','audio_wattage','maximum_operating_distance','brand','resolution','rating',
+
+PROJECT_NAME = ""
+FEATURES_SELECTED_BY_SME = ['price','refresh_rate','audio_wattage','maximum_operating_distance','brand','resolution','rating',
 'standing_screen_display_size','display_technology','item_weight','wattage','supports_bluetooth_technology']
 
 PRODUCT_INFORMATION = ['image_url','product','product_url']
 
+ALL_COLUMNS = sorted(FEATURES_SELECTED_BY_SME + PRODUCT_INFORMATION)
+# print(ALL_COLUMNS)
 
-
-ALL_COLUMNS = FEATURES_SELECTED_BY_SME + PRODUCT_INFORMATION
 df = df.loc[:,ALL_COLUMNS]
 
-df.head()
 
 # %%
 missing_value_df = null_percentage(df)
 missing_value_df
 
 # %%
-import re 
-import numpy as np 
+
 
 def extract_data_before_first_space(string):
     if string is not np.NaN:
@@ -124,8 +136,6 @@ except Exception as  ex :
 
 
 
-# %%
-df.head()
 
 # %%
 ##filling null values 
@@ -144,30 +154,15 @@ df.head()
 # df['supports_bluetooth_technology'] = df['supports_bluetooth_technology'].fillna(df['supports_bluetooth_technology'].mode()[0])
 
 
-
-
-# %% [markdown]
-# df.describe()
-
-# %%
-df.dtypes
-
-# %%
 df_types = df.dtypes.apply(lambda x: x.name).to_dict()  
-df_types
 
-
-# %%
 categorical_values = [ i for i in df_types if df_types[i] =='object']
 ##ask for product information by showing categories and keep the remaining as either boolean if 2 or keep them as ENUM
 # columns for product information will be coming from admin 
-categorical_values
 
-# %%
 def categories_enum_or_boolean(df,column):
     return df[column].value_counts().size == 2
 
-# %%
 
 #seggregating the data type of features
 CATEGORICAL_FEATURES = list(set(categorical_values).difference(set(PRODUCT_INFORMATION)))
@@ -181,28 +176,23 @@ for i in CATEGORICAL_FEATURES:
         ENUM_COLS.append(i)
 #divide what are booleans and what are enums
 
-
 VECTOR_FEATURES = list(set(df_types.keys()).difference(set(CATEGORICAL_FEATURES+PRODUCT_INFORMATION)))
 
 ##sorted values to keep their index positions secure
 DATA_TYPE_DICTIONARY = {'Number':sorted(VECTOR_FEATURES),'Enum':sorted(ENUM_COLS),'Boolean':sorted(BOOLEAN_COLS)}
 
 
-# %%
 ##converting Booleans to 1 and 0 
 for boolean_column in DATA_TYPE_DICTIONARY['Boolean']:
     value1,value2 = df[boolean_column].value_counts().index.to_list()
     df[boolean_column]= df[boolean_column].map({value1:1, value2:0})
     # print(boolean_column)
 
-# %%
-
 
 with open("data_type_dictionary.json", "w") as outfile:
     json.dump(DATA_TYPE_DICTIONARY, outfile)
 
-# %%
-print("---Before: ", df.isnull().sum())
+
 ##imputing null values 
 for datatype in DATA_TYPE_DICTIONARY:
 
@@ -213,33 +203,15 @@ for datatype in DATA_TYPE_DICTIONARY:
         for col in DATA_TYPE_DICTIONARY[datatype]:
             df[col] = df[col].fillna(df[col].mode()[0])
 
-print("---After: ", df.isnull().sum())
-
-        
 
 
+##remove outliers which are out of standard deviation 2
 
-# %%
-df.shape
-
-
-# %%
-##remove outliers which are out of standar deviation 2
-from scipy import stats
 df = df[(np.abs(stats.zscore(df.select_dtypes(exclude='object'))) < 2).all(axis=1)]
 
 
-
-# %%
-df.shape
-
-# %%
-df.head()
-
 # %%
 ## Now time to do min max normalisation
-
-
 def normalise_min_max(df,numeric_columns):
     '''
     df all cols should be numerical 
@@ -251,12 +223,12 @@ def normalise_min_max(df,numeric_columns):
         df[column+"_norm"] = ((df[column] - df[column].min()) /(df[column].max() - df[column].min())+1)
     return df
 
-# %%
-DATA_TYPE_DICTIONARY
 
 # %%
+
+db = Database(DB_URL,DB_NAME,min_max_collection)
+##making the min_max_filters into the db
 for datatype in DATA_TYPE_DICTIONARY:
-
     if datatype in ["Number", "Boolean"]:
         for filter_name in DATA_TYPE_DICTIONARY[datatype]:
             min_val, max_val = float(df[filter_name].min()), float(
@@ -267,7 +239,7 @@ for datatype in DATA_TYPE_DICTIONARY:
                 "filter": filter_name,
                 "data_type": datatype
             }
-            print(object_to_be_inserted)
+            db.connect_to_collection().insert_one(object_to_be_inserted)
     else:
         for filter_name in (DATA_TYPE_DICTIONARY[datatype]):
             enum_array = df[filter_name].value_counts().index.to_list()
@@ -276,19 +248,20 @@ for datatype in DATA_TYPE_DICTIONARY:
             "filter": filter_name,
             "data_type": datatype
             }
-            print(object_to_be_inserted)
+            # print(object_to_be_inserted)
+            db.connect_to_collection().insert_one(object_to_be_inserted)
+
         
 
 
 # %%
+##Normalisation happened
 df_min_max = normalise_min_max(df,DATA_TYPE_DICTIONARY['Number'])
-df_min_max.head(5)
-# df.columns
 
-# %%
-DB_URL = "mongodb://localhost:27017/"
-DB_NAME = "tvs"
-questions_collection = 'questions'
-options_collection = 'options'
+
+##push the data to datasets collection
+dataset_to_db = Database(DB_URL,DB_NAME,dataset_collection)
+dataset_to_db.insert_documents(df_min_max.to_dict('records'))
+
 
 

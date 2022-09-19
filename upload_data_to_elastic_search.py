@@ -55,15 +55,6 @@ def get_default_values(filename):
 def make_records(file_name):
 
     df = pd.read_csv(file_name)
-    # user_vec_ES = [df['weight_norm'].mean(), df['ram_norm'].median(), df['price_norm'].median(), df['graphics_norm'].median(),
-    #                df['disk_norm'].median(), df['battery_norm'].median(), df['display_norm'].median(), df['processor_norm'].median(), df['max_memory_norm'].median()]
-    # user_vec_ES = [str(i) for i in user_vec_ES]
-
-    # ## creating default vectors for refernece in future
-    # with open('default_vector_values.txt', 'w') as file:
-    #     file.write("|".join(user_vec_ES))
-
-    # print("File : default_vector_values.txt  with default vectors created...")
     return df.to_dict('records')
 
 
